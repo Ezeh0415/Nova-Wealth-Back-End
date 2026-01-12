@@ -80,10 +80,11 @@ Manual upload (starter)
 Create a wallet table/collection:
 
 {
-userId,
-balance: 0,
-currency: "USDT"
+  userId,
+  balance: 0,
+  currency: "USDT"
 }
+
 
 Never trust frontend balances.
 
@@ -92,13 +93,14 @@ Never trust frontend balances.
 Every action must be recorded:
 
 {
-userId,
-type: "deposit | invest | profit | withdraw",
-amount,
-status,
-reference,
-createdAt
+  userId,
+  type: "deposit | invest | profit | withdraw",
+  amount,
+  status,
+  reference,
+  createdAt
 }
+
 
 💡 This is how real platforms avoid disputes
 
@@ -149,19 +151,19 @@ Admin approves
 
 Create plans like:
 
-Plan ROI Duration
-Bronze 5% 7 days
-Silver 10% 14 days
-Gold 20% 30 days
+Plan	ROI	Duration
+Bronze	5%	7 days
+Silver	10%	14 days
+Gold	20%	30 days
 
 Schema:
 
 {
-name,
-roi,
-duration,
-minAmount,
-maxAmount
+  name,
+  roi,
+  duration,
+  minAmount,
+  maxAmount
 }
 
 ✅ 10. Invest funds
@@ -177,13 +179,13 @@ Investment created
 Status = active
 
 {
-userId,
-planId,
-amount,
-profit,
-startDate,
-endDate,
-status
+  userId,
+  planId,
+  amount,
+  profit,
+  startDate,
+  endDate,
+  status
 }
 
 ✅ 11. Profit calculation (AUTOMATED)
