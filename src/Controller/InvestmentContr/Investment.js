@@ -9,12 +9,18 @@ class Investment {
   }
 
   async invest(req, res) {
-    const { amount, investmentType, investmentStartDate, investmentEndDate } =
-      req.body;
+    const {
+      amount,
+      roi,
+      investmentType,
+      investmentStartDate,
+      investmentEndDate,
+    } = req.body;
 
     try {
       if (
         !amount ||
+        !roi ||
         !investmentType ||
         !investmentStartDate ||
         !investmentEndDate
@@ -27,6 +33,7 @@ class Investment {
       const investment = await this.InvestmentService.invest(
         req.user.id,
         amount,
+        roi,
         investmentType,
         investmentStartDate,
         investmentEndDate
@@ -39,7 +46,7 @@ class Investment {
   }
 
   async processDailyROI(req, res) {
-     await this.InvestmentService.processDailyROI();
+    await this.InvestmentService.processDailyROI();
   }
 }
 

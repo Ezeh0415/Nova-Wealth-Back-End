@@ -15,13 +15,17 @@ const investmentSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    TotalReturns: {
+      type: Number,
+      default: 0,
+    },
     lastRoiAt: {
       type: Date,
       default: null,
     },
     investmentType: {
       type: String,
-      enum: ["daily", "weekly", "monthly", "yearly"],
+      enum: ["basic", "standard", "premium", "ultimate"],
       required: true,
     },
     investmentStartDate: {

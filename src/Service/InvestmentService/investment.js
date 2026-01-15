@@ -9,6 +9,7 @@ class InvestmentService {
   async invest(
     userId,
     amount,
+    roi,
     investmentType,
     investmentStartDate,
     investmentEndDate
@@ -16,6 +17,7 @@ class InvestmentService {
     if (
       !userId ||
       !amount ||
+      !roi ||
       !investmentType ||
       !investmentStartDate ||
       !investmentEndDate
@@ -45,6 +47,7 @@ class InvestmentService {
     const investment = new this.InvestmentModel({
       userId,
       amount,
+      roi,
       investmentType,
       investmentStartDate,
       investmentEndDate,
@@ -58,24 +61,13 @@ class InvestmentService {
    */
 
   async processDailyROI() {
-    // this is investment rules
-    const INVESTMENT_RULES = {
-      daily: {
-        intervalMs: 24 * 60 * 60 * 1000,
-        rate: 0.02,
-      },
-      weekly: {
-        intervalMs: 7 * 24 * 60 * 60 * 1000,
-        rate: 0.04,
-      },
-      monthly: {
-        intervalMs: 30 * 24 * 60 * 60 * 1000,
-        rate: 0.06,
-      },
-      yearly: {
-        intervalMs: 365 * 24 * 60 * 60 * 1000,
-        rate: 0.08,
-      },
+    const DAILY_INTERVAL = 24 * 60 * 60 * 1000;
+
+    const PLAN_RATES = {
+      basic: 0.02,
+      standard: 0.04,
+      premium: 0.06,
+      ultimate: 0.08,
     };
 
     const now = new Date();
@@ -85,42 +77,45 @@ class InvestmentService {
     });
 
     for (const inv of investments) {
-      const rule = INVESTMENT_RULES[inv.investmentType];
-      if (!rule) continue;
-      const lastRoi = inv.lastRoiAt || inv.investmentStartDate;
-      const shouldCreditROI = now - lastRoi >= rule.intervalMs;
+      const rate = PLAN_RATES[inv.investmentType];
+      if (!rate) continue;
 
-      if (shouldCreditROI) {
-        const amount = Number(inv.amount);
-        const roi = Number(inv.roi) || 0;
+      const lastRun = inv.lastRoiAt || inv.investmentStartDate;
 
-        if (!Number.isFinite(amount)) {
-          throw new Error("Invalid investment amount");
-        }
+      // 🔒 Prevent double credit
+      if (now - lastRun < DAILY_INTERVAL) continue;
 
-        const Profit = Math.floor(amount * rule.rate);
-
-        if (Profit > 0) {
-          inv.roi = roi + Profit;
-          inv.lastRoiAt = now;
-          await inv.save();
-        }
-
-        const now = new Date();
-
-        if (now >= inv.investmentEndDate && inv.investmentStatus === "active") {
-          await this.completeInvestment(inv._id);
-          inv.investmentEndDate = now;
-          await inv.save();
-        }
-
-        await this.WalletModel.updateOne(
-          { userId: inv.userId },
-          {
-            $inc: { invBalance: Profit },
-          }
-        );
+      // ⛔ Stop if investment expired
+      if (now >= inv.investmentEndDate) {
+        await this.completeInvestment(inv._id);
+        continue;
       }
+
+      const amount = Number(inv.amount);
+      if (!Number.isFinite(amount) || amount <= 0) continue;
+
+      const profit = amount * rate; // NO rounding
+
+      // Update investment
+
+      inv.totalReturns = (inv.totalReturns || 0) + profit;
+      inv.lastRoiAt = now;
+      await inv.save();
+
+      // Credit wallet
+      await this.WalletModel.updateOne(
+        { userId: inv.userId },
+        { $inc: { balance: profit } }
+      );
+
+      // Transaction record (VERY IMPORTANT)
+      await this.TransactionModel.create({
+        userId: inv.userId,
+        investmentId: inv._id,
+        type: "profit",
+        amount: profit,
+        description: "Daily investment ROI",
+      });
     }
   }
 

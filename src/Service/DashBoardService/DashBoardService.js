@@ -10,7 +10,7 @@ class DashboardService {
     // Wallet
     const wallet = (await this.WalletModel.findOne({ userId })) || {
       balance: 0,
-    };
+    }; 
 
     // Investments
     const investments = await this.InvestmentModel.find({ userId });

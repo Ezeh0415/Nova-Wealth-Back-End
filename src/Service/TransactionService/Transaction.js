@@ -24,14 +24,14 @@ class WalletService {
       userId,
       type: "deposit",
       currency,
-      requestedAmount: amount,
+      requestedAmount: creditedAmountInKobo,
       creditedAmount: 0,
       status: "pending",
     });
 
     await this.AdminTransactionModel.create({
       userId,
-      creditedAmount: amount,
+      creditedAmount: creditedAmountInKobo,
       currency,
       transactionId: transaction._id,
     });

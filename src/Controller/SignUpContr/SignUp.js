@@ -77,7 +77,7 @@ class SignUpController {
       });
 
       // 8️⃣ Return sanitized user
-      const { password: _, refreshToken: __, ...safeUser } = user.toObject();
+      const { password: _, refreshToken: __,  ...safeUser } = user.toObject();
 
       return res.status(201).json({
         message: "User created successfully",

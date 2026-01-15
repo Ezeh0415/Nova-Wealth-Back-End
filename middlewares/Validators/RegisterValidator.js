@@ -44,9 +44,5 @@ exports.registerValidator = [
     .matches(/[A-Z]/)
     .withMessage("Password must contain an uppercase letter")
     .matches(/[a-z]/)
-    .withMessage("Password must contain a lowercase letter")
-    .matches(/[0-9]/)
-    .withMessage("Password must contain a number")
-    .matches(/[@$!%*?&#]/)
-    .withMessage("Password must contain a special character"),
+    .withMessage("Password must contain a lowercase letter"),
 ];

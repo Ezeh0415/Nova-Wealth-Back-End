@@ -4,12 +4,14 @@ const cron = require("node-cron");
 // controller section
 const SignUpController = require("../Controller/SignUpContr/SignUp");
 const LoginController = require("../Controller/LoginContr/Login");
+const ForgotPasswordController = require("../Controller/ForgotPasswordContr/ForgotPassword");
 const DashBoardContr = require("../Controller/DashBoardContr/DashBoardContr");
 const InvestmentContr = require("../Controller/InvestmentContr/Investment");
 
 // service section
 const SignUpService = require("../Service/SignUpService/SignUp");
 const LoginService = require("../Service/LoginService/Login");
+const ForgotPasswordService = require("../Service/forgotPassword/forgotPassword");
 const DashBoardService = require("../Service/DashBoardService/DashBoardService");
 const WalletService = require("../Service/TransactionService/Transaction");
 const InvestmentService = require("../Service/InvestmentService/investment");
@@ -45,11 +47,13 @@ const {
 } = require("../../middlewares/Validators/TransactionValidator");
 const { CancleDeposit } = require("../../middlewares/Validators/CancleDeposit");
 const refreshToken = require("../../middlewares/JWT-refresh");
+const { resetPassword } = require("../../middlewares/Validators/resetPassword");
 
 // service bind to schema section
 
 const SignupService = new SignUpService(User);
 const Loginservice = new LoginService(User);
+const forgotPasswordService = new ForgotPasswordService(User);
 const dashboardService = new DashBoardService({
   WalletModel: WalletSchema,
   TransactionModel: TransactionSchema,
@@ -70,6 +74,9 @@ const investmentService = new InvestmentService({
 // controller bind to service section
 const SignupController = new SignUpController(SignupService);
 const Logincontroller = new LoginController(Loginservice);
+const forgotPasswordController = new ForgotPasswordController(
+  forgotPasswordService
+);
 const DashBoardController = new DashBoardContr(dashboardService);
 const payment = new Payment(paymentService);
 const investmentController = new InvestmentContr(investmentService);
@@ -88,6 +95,22 @@ Router.post(
   validate,
   Require_Api_key,
   Logincontroller.login
+);
+
+Router.post(
+  "/forgotPassword",
+  Require_Api_key,
+  forgotPasswordController.forgotPassword
+);
+
+Router.post("/verifyOtp", Require_Api_key, forgotPasswordController.verifyOtp);
+
+Router.post(
+  "/resetPassword",
+  resetPassword,
+  validate,
+  Require_Api_key,
+  forgotPasswordController.resetPassword
 );
 
 Router.get(
