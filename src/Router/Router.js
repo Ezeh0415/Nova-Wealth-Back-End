@@ -7,6 +7,7 @@ const LoginController = require("../Controller/LoginContr/Login");
 const ForgotPasswordController = require("../Controller/ForgotPasswordContr/ForgotPassword");
 const DashBoardContr = require("../Controller/DashBoardContr/DashBoardContr");
 const InvestmentContr = require("../Controller/InvestmentContr/Investment");
+const CryptoWalletContr = require("../Controller/CryptoWalletContr/CryptoWallet");
 
 // service section
 const SignUpService = require("../Service/SignUpService/SignUp");
@@ -15,6 +16,7 @@ const ForgotPasswordService = require("../Service/forgotPassword/forgotPassword"
 const DashBoardService = require("../Service/DashBoardService/DashBoardService");
 const WalletService = require("../Service/TransactionService/Transaction");
 const InvestmentService = require("../Service/InvestmentService/investment");
+const CryptoWalletService = require("../Service/CryptoWalletService/CryptoWallet");
 
 // schema section
 const User = require("../Models/UserSchema");
@@ -22,6 +24,7 @@ const WalletSchema = require("../Models/WalletSchema");
 const TransactionSchema = require("../Models/TransactionSchema");
 const InvestmentSchema = require("../Models/InvestmentSchema");
 const AdminTransactionSchema = require("../Models/AdminTransactionSchema");
+const CryptoWalletSchema = require("../Models/CryptoWalletSchema");
 
 // middlewares section
 const Require_jwt_key = require("../../middlewares/JWT-key");
@@ -71,6 +74,8 @@ const investmentService = new InvestmentService({
   WalletModel: WalletSchema,
 });
 
+const cryptoWalletService = new CryptoWalletService(CryptoWalletSchema);
+
 // controller bind to service section
 const SignupController = new SignUpController(SignupService);
 const Logincontroller = new LoginController(Loginservice);
@@ -80,6 +85,7 @@ const forgotPasswordController = new ForgotPasswordController(
 const DashBoardController = new DashBoardContr(dashboardService);
 const payment = new Payment(paymentService);
 const investmentController = new InvestmentContr(investmentService);
+const cryptoWalletController = new CryptoWalletContr(cryptoWalletService);
 
 // router sections
 Router.post(
@@ -144,12 +150,33 @@ cron.schedule("*/2 * * * * *", () => {
 
 Router.post("/refreshToken", Require_Api_key, refreshToken);
 
+Router.get(
+  "/getWallets",
+  Require_Api_key,
+  Require_jwt_key,
+  cryptoWalletController.getCryptoWallet
+);
+
 // admin section
 Router.get(
   "/Transactions",
   Require_Api_key,
   Require_jwt_key,
   payment.AdminGetTransaction
+);
+
+Router.post(
+  "/addWallet",
+  Require_Api_key,
+  Require_jwt_key,
+  cryptoWalletController.UpdateCryptoWallet
+);
+
+Router.post(
+  "/deleteWallet",
+  Require_Api_key,
+  Require_jwt_key,
+  cryptoWalletController.DeleteCryptoWallet
 );
 
 Router.post(

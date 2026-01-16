@@ -1,10 +1,10 @@
 class CryptoWalletService {
-  constructor(CryptoWallet) {
-    this.CryptoWallet = CryptoWallet;
+  constructor(CryptoWalletSchema) {
+    this.CryptoWalletSchema = CryptoWalletSchema;
   }
 
   async getCryptoWallet() {
-    const CryptoWallet = await this.CryptoWallet.find();
+    const CryptoWallet = await this.CryptoWalletSchema.find();
     return CryptoWallet;
   }
 
@@ -13,15 +13,23 @@ class CryptoWalletService {
       throw new Error("CryptoName or CryptoAddress is required");
     }
 
-    const CryptoWallet = await this.CryptoWallet.findOneAndUpdate(
-      { CryptoName: CryptoName },
-      { CryptoAddress: CryptoAddress }
-    );
+    const CryptoWallet = new this.CryptoWalletSchema({
+      cryptoName: CryptoName,
+      cryptoAddress: CryptoAddress,
+    });
 
+    await CryptoWallet.save();
+
+    return CryptoWallet;
+  }
+
+  async DeleteCryptoWallet(userId) {
+    const CryptoWallet = await this.CryptoWalletSchema.findOneAndDelete({
+      _id: userId,
+    });
     if (!CryptoWallet) {
       throw new Error("CryptoWallet not found");
     }
-
     return CryptoWallet;
   }
 }
