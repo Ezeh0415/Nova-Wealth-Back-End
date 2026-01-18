@@ -1,5 +1,8 @@
+const { default: mongoose } = require("mongoose");
+const userModels = require("../../Models/UserSchema");
 class InvestmentService {
-  constructor({ InvestmentModel, WalletModel }) {
+  constructor({AdminTransactionModel, InvestmentModel, WalletModel }) {
+    this.AdminTransactionModel = AdminTransactionModel;
     this.InvestmentModel = InvestmentModel;
     this.WalletModel = WalletModel;
   }
@@ -12,7 +15,7 @@ class InvestmentService {
     roi,
     investmentType,
     investmentStartDate,
-    investmentEndDate
+    investmentEndDate,
   ) {
     if (
       !userId ||
@@ -42,17 +45,37 @@ class InvestmentService {
     const creditedAmountInKobo = amount * 100;
     await this.WalletModel.updateOne(
       { userId },
-      { $inc: { balance: -creditedAmountInKobo } }
+      { $inc: { balance: -creditedAmountInKobo } },
     );
     const investment = new this.InvestmentModel({
       userId,
-      amount,
+      amount: creditedAmountInKobo,
       roi,
       investmentType,
       investmentStartDate,
       investmentEndDate,
     });
     await investment.save();
+
+    // Convert userId to ObjectId
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Find user - use await
+    const user = await userModels.findOne({ _id: userObjectId });
+    if (!user) throw new Error("User not found");
+
+    await this.AdminTransactionModel.create({
+      userId: userObjectId,
+      fullName: user.fullName,
+      userName: user.userName,
+      email: user.email,
+      type: "investment",
+      creditedAmount: creditedAmountInKobo,
+      currency: currency.toUpperCase(),
+      status: "active",
+      transactionId: transaction._id,
+    });
+
     return investment;
   }
 
@@ -105,7 +128,7 @@ class InvestmentService {
       // Credit wallet
       await this.WalletModel.updateOne(
         { userId: inv.userId },
-        { $inc: { balance: profit } }
+        { $inc: { invBalance: profit } },
       );
 
       // Transaction record (VERY IMPORTANT)
@@ -138,8 +161,9 @@ class InvestmentService {
     }
 
     // Return capital + ROI
-    wallet.pending -= investment.roi;
-    wallet.balance += investment.amount + investment.roi;
+    wallet.balance += investment.amount + investment.invBalance;
+    wallet.totalReturn += investment.invBalance;
+    wallet.invBalance = 0;
 
     await wallet.save();
 

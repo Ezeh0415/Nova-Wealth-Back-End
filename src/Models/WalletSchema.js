@@ -15,6 +15,10 @@ const WalletSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    totalReturn: {
+      type: Number,
+      default: 0,
+    },
     pending: {
       type: Number,
       default: 0,

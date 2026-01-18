@@ -11,6 +11,15 @@ exports.investmentValidator = [
     .withMessage("Amount must be greater than 0")
     .toInt(),
 
+  body("roi")
+    .exists()
+    .withMessage("roi is required")
+    .isNumeric()
+    .withMessage("roi must be a number")
+    .custom((value) => value > 0)
+    .withMessage("roi must be greater than 0")
+    .toInt(),
+  
   // investmentType
   body("investmentType")
     .exists()
@@ -18,7 +27,7 @@ exports.investmentValidator = [
     .isString()
     .trim()
     .escape()
-    .isIn(["daily", "weekly", "monthly", "yearly"])
+    .isIn(["basic", "standard", "premium", "ultimate"])
     .withMessage("Invalid investment type"),
 
   // investmentStartDate

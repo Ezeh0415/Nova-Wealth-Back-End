@@ -22,7 +22,7 @@ class Payment {
       const data = await this.Transaction.requestDeposit(
         req.user.id,
         amount,
-        currency
+        currency,
       );
       return res.status(200).json(data);
     } catch (err) {
@@ -50,9 +50,10 @@ class Payment {
 
     try {
       const data = await this.Transaction.confirmDeposit(
+        req.user.id,
         userId,
         creditedAmount,
-        transactionId
+        transactionId,
       );
       return res.status(200).json(data);
     } catch (err) {
@@ -68,7 +69,11 @@ class Payment {
     }
 
     try {
-      const data = await this.Transaction.cancleDeposit(userId, transactionId);
+      const data = await this.Transaction.cancleDeposit(
+        req.user.id,
+        userId,
+        transactionId,
+      );
       return res.status(200).json(data);
     } catch (err) {
       return res.status(500).json({ message: err.message });

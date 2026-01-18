@@ -3,7 +3,9 @@ const cron = require("node-cron");
 
 // controller section
 const SignUpController = require("../Controller/SignUpContr/SignUp");
+const AdminSignupController = require("../Controller/AdminSignUpContr/AdminSignup");
 const LoginController = require("../Controller/LoginContr/Login");
+const AdminLoginController = require("../Controller/AdminLoginContr/AdminLoginContr");
 const ForgotPasswordController = require("../Controller/ForgotPasswordContr/ForgotPassword");
 const DashBoardContr = require("../Controller/DashBoardContr/DashBoardContr");
 const InvestmentContr = require("../Controller/InvestmentContr/Investment");
@@ -11,7 +13,9 @@ const CryptoWalletContr = require("../Controller/CryptoWalletContr/CryptoWallet"
 
 // service section
 const SignUpService = require("../Service/SignUpService/SignUp");
+const AdminSignupService = require("../Service/AdminSignupService/AdminSignUpService");
 const LoginService = require("../Service/LoginService/Login");
+const AdminLoginService = require("../Service/AdminLoginService/AdminLoginService");
 const ForgotPasswordService = require("../Service/forgotPassword/forgotPassword");
 const DashBoardService = require("../Service/DashBoardService/DashBoardService");
 const WalletService = require("../Service/TransactionService/Transaction");
@@ -51,11 +55,16 @@ const {
 const { CancleDeposit } = require("../../middlewares/Validators/CancleDeposit");
 const refreshToken = require("../../middlewares/JWT-refresh");
 const { resetPassword } = require("../../middlewares/Validators/resetPassword");
+const {
+  AdminLoginValidator,
+} = require("../../middlewares/Validators/AdminLoginValidation");
 
 // service bind to schema section
 
 const SignupService = new SignUpService(User);
+const adminSignupService = new AdminSignupService(User);
 const Loginservice = new LoginService(User);
+const adminLoginService = new AdminLoginService(User);
 const forgotPasswordService = new ForgotPasswordService(User);
 const dashboardService = new DashBoardService({
   WalletModel: WalletSchema,
@@ -64,12 +73,14 @@ const dashboardService = new DashBoardService({
   UserModel: User,
 });
 const paymentService = new WalletService({
+  UserModel: User,
   WalletModel: WalletSchema,
   TransactionModel: TransactionSchema,
   AdminTransactionModel: AdminTransactionSchema,
 });
 
 const investmentService = new InvestmentService({
+  AdminTransactionModel: AdminTransactionSchema,
   InvestmentModel: InvestmentSchema,
   WalletModel: WalletSchema,
 });
@@ -78,9 +89,11 @@ const cryptoWalletService = new CryptoWalletService(CryptoWalletSchema);
 
 // controller bind to service section
 const SignupController = new SignUpController(SignupService);
+const adminSignupController = new AdminSignupController(adminSignupService);
 const Logincontroller = new LoginController(Loginservice);
+const adminLoginController = new AdminLoginController(adminLoginService);
 const forgotPasswordController = new ForgotPasswordController(
-  forgotPasswordService
+  forgotPasswordService,
 );
 const DashBoardController = new DashBoardContr(dashboardService);
 const payment = new Payment(paymentService);
@@ -93,20 +106,20 @@ Router.post(
   registerValidator,
   validate,
   Require_Api_key,
-  SignupController.signUp
+  SignupController.signUp,
 );
 Router.post(
   "/login",
   loginValidator,
   validate,
   Require_Api_key,
-  Logincontroller.login
+  Logincontroller.login,
 );
 
 Router.post(
   "/forgotPassword",
   Require_Api_key,
-  forgotPasswordController.forgotPassword
+  forgotPasswordController.forgotPassword,
 );
 
 Router.post("/verifyOtp", Require_Api_key, forgotPasswordController.verifyOtp);
@@ -116,14 +129,14 @@ Router.post(
   resetPassword,
   validate,
   Require_Api_key,
-  forgotPasswordController.resetPassword
+  forgotPasswordController.resetPassword,
 );
 
 Router.get(
   "/dashboard",
   Require_Api_key,
   Require_jwt_key,
-  DashBoardController.getDashboard
+  DashBoardController.getDashboard,
 );
 
 Router.post(
@@ -132,7 +145,7 @@ Router.post(
   validate,
   Require_Api_key,
   Require_jwt_key,
-  payment.requestDeposit
+  payment.requestDeposit,
 );
 
 Router.post(
@@ -141,7 +154,7 @@ Router.post(
   investmentValidator,
   validate,
   Require_jwt_key,
-  investmentController.invest
+  investmentController.invest,
 );
 
 cron.schedule("*/2 * * * * *", () => {
@@ -154,38 +167,52 @@ Router.get(
   "/getWallets",
   Require_Api_key,
   Require_jwt_key,
-  cryptoWalletController.getCryptoWallet
+  cryptoWalletController.getCryptoWallet,
 );
 
 // admin section
+Router.post(
+  "/AdminSignup",
+  registerValidator,
+  validate,
+  Require_Api_key,
+  adminSignupController.signUp,
+);
+
+Router.post(
+  "/AdminLogin",
+  AdminLoginValidator,
+  validate,
+  Require_Api_key,
+  adminLoginController.login,
+);
+
 Router.get(
   "/Transactions",
   Require_Api_key,
   Require_jwt_key,
-  payment.AdminGetTransaction
+  payment.AdminGetTransaction,
 );
 
 Router.post(
   "/addWallet",
   Require_Api_key,
   Require_jwt_key,
-  cryptoWalletController.UpdateCryptoWallet
+  cryptoWalletController.UpdateCryptoWallet,
 );
 
 Router.post(
   "/deleteWallet",
   Require_Api_key,
   Require_jwt_key,
-  cryptoWalletController.DeleteCryptoWallet
+  cryptoWalletController.DeleteCryptoWallet,
 );
 
 Router.post(
   "/confirmDeposit",
-  creditTransactionValidator,
-  validate,
   Require_Api_key,
   Require_jwt_key,
-  payment.confirmDeposit
+  payment.confirmDeposit,
 );
 
 Router.post(
@@ -194,7 +221,21 @@ Router.post(
   validate,
   Require_Api_key,
   Require_jwt_key,
-  payment.cancleDeposit
+  payment.cancleDeposit,
 );
 // admin section
+
+Router.post("/logout", (req, res) => {
+  // Clear the refresh token cookie
+  res.clearCookie("refreshToken", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+  });
+
+  return res.status(200).json({
+    message: "Logged out successfully",
+    success: true,
+  });
+});
 module.exports = Router;

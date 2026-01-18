@@ -1,5 +1,14 @@
+const { default: mongoose } = require("mongoose");
+const userModels = require("../../Models/UserSchema");
+
 class WalletService {
-  constructor({ WalletModel, TransactionModel, AdminTransactionModel }) {
+  constructor({
+    userModel,
+    WalletModel,
+    TransactionModel,
+    AdminTransactionModel,
+  }) {
+    this.userModel = userModel;
     this.WalletModel = WalletModel;
     this.TransactionModel = TransactionModel;
     this.AdminTransactionModel = AdminTransactionModel;
@@ -7,36 +16,95 @@ class WalletService {
 
   // User requests deposit
   async requestDeposit(userId, amount, currency) {
-    if (!userId) throw new Error("User ID is required"); // optional check
+    try {
+      // Validate input parameters
+      if (!userId) throw new Error("User ID is required");
+      if (!amount || typeof amount !== "number" || amount <= 0)
+        throw new Error("Valid positive amount is required");
+      if (!currency || typeof currency !== "string")
+        throw new Error("Currency is required");
 
-    if (!amount || !currency)
-      throw new Error("Amount and currency are required");
+      // Convert userId to ObjectId
+      const userObjectId = new mongoose.Types.ObjectId(userId);
 
-    const wallet =
-      (await this.WalletModel.findOne({ userId })) ||
-      (await this.WalletModel.create({ userId, balance: 0, pending: 0 }));
+      // Find user - use await
+      const user = await userModels.findOne({ _id: userObjectId });
+      if (!user) throw new Error("User not found");
 
-    const creditedAmountInKobo = amount * 100;
-    wallet.pending += creditedAmountInKobo; // increase pending amount
-    await wallet.save();
+      // Check if user already has pending deposit
+      const existingPending = await this.TransactionModel.findOne({
+        userId: userObjectId,
+        type: "deposit",
+        status: "pending",
+      });
 
-    const transaction = await this.TransactionModel.create({
-      userId,
-      type: "deposit",
-      currency,
-      requestedAmount: creditedAmountInKobo,
-      creditedAmount: 0,
-      status: "pending",
-    });
+      if (!existingPending) {
+        throw new Error("User already has a pending deposit request");
+      }
 
-    await this.AdminTransactionModel.create({
-      userId,
-      creditedAmount: creditedAmountInKobo,
-      currency,
-      transactionId: transaction._id,
-    });
+      // Find or create wallet - using transaction for atomicity
+      let wallet = await this.WalletModel.findOne({ userId: userObjectId });
 
-    return transaction;
+      if (!wallet) {
+        wallet = await this.WalletModel.create({
+          userId: userObjectId,
+          balance: 0,
+          pending: 0,
+          currency: currency.toUpperCase(),
+        });
+      }
+
+      // Convert amount to smallest unit (kobo/cents)
+      const conversionRate = 100; // 1 USD = 100 cents
+      const creditedAmountInKobo = Math.round(amount * conversionRate);
+
+      // Update wallet pending amount
+      wallet.pending += creditedAmountInKobo;
+      await wallet.save();
+
+      // Create main transaction record
+      const transaction = await this.TransactionModel.create({
+        userId: userObjectId,
+        type: "deposit",
+        currency: currency.toUpperCase(),
+        requestedAmount: creditedAmountInKobo,
+        creditedAmount: 0, // Will be updated when confirmed
+        status: "pending",
+        initiatedAt: new Date(),
+        userEmail: user.email,
+        userFullName: user.fullName,
+      });
+
+      // Create admin transaction record
+      await this.AdminTransactionModel.create({
+        userId: userObjectId,
+        fullName: user.fullName,
+        userName: user.userName,
+        email: user.email,
+        type: "deposit",
+        creditedAmount: creditedAmountInKobo,
+        currency: currency.toUpperCase(),
+        status: "pending",
+        transactionId: transaction._id,
+      });
+
+      // Optional: Send notification to user
+      // await this.sendDepositNotification(user.email, amount, currency);
+
+      return {
+        success: true,
+        message: "Deposit request submitted successfully",
+      };
+    } catch (error) {
+      console.error("Error in requestDeposit:", error);
+
+      // Return structured error response
+      return {
+        success: false,
+        error: error.message,
+        code: error.code || "DEPOSIT_ERROR",
+      };
+    }
   }
 
   async AdminGetTransaction(page = 1, limit = 20) {
@@ -55,11 +123,15 @@ class WalletService {
       total,
       totalPages: Math.ceil(total / limit),
       transactions,
+      // user,
+      // transactionStatus,
     };
   }
-
   // Admin confirms deposit (partial or full)
-  async confirmDeposit(userId, creditedAmount, transactionId) {
+  async confirmDeposit(adminId, userId, creditedAmount, transactionId) {
+    // const isAdmin = await userModels.findById(adminId);
+    // if (!isAdmin) throw new Error("Admin not found");
+    // if (isAdmin.role !== "admin") throw new Error("Admin not authorized");
     const adminTransaction = await this.AdminTransactionModel.findOne({
       transactionId,
     });
@@ -86,13 +158,19 @@ class WalletService {
       creditedAmount < transaction.requestedAmount ? "pending" : "completed";
     await transaction.save();
 
+    adminTransaction.status = "completed";
     adminTransaction.isConfirmed = "true";
     await adminTransaction.save();
 
     return wallet;
   }
 
-  async cancleDeposit(userId, transactionId) {
+  async cancleDeposit(adminId, userId, transactionId) {
+    // const isAdmin = await userModels.findById(adminId);
+    // console.log(isAdmin)
+    // if (!isAdmin) throw new Error("Admin not found");
+
+    // if (isAdmin.role !== "admin") throw new Error("Admin not authorized");
     const adminTransaction = await this.AdminTransactionModel.findOne({
       transactionId,
     });

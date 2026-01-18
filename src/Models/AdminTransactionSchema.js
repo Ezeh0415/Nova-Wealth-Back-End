@@ -7,10 +7,31 @@ const AdminSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+    fullName: {
+      type: String,
+      required: true,
+    },
+    userName: {
+      type: String,
+      required: true,
+    },
+    email: {
+      type: String,
+      required: true,
+    },
     creditedAmount: {
       type: Number,
       required: true,
       default: 0,
+    },
+
+    type: {
+      type: String,
+      enum: ["deposit", "withdraw", "investment", "profit"],
+      required: true,
+    },
+    status: {
+      type: String,
     },
     transactionId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -29,7 +50,7 @@ const AdminSchema = new mongoose.Schema(
       default: "pending",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("AdminTransaction", AdminSchema);

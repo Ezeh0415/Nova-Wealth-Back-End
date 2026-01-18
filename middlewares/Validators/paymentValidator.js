@@ -15,6 +15,5 @@ exports.paymentValidator = [
     .isString()
     .withMessage("Payment Method must be a string")
     .trim()
-    .isIn(["usdt", "btc", "eth"])
     .withMessage("Payment Method must be usdt, btc, or eth"),
 ];
