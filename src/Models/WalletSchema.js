@@ -15,6 +15,10 @@ const WalletSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    totalDeposits: {
+      type: Number,
+      default: 0,
+    },
     totalReturn: {
       type: Number,
       default: 0,
@@ -24,7 +28,7 @@ const WalletSchema = new mongoose.Schema(
       default: 0,
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Wallet", WalletSchema);

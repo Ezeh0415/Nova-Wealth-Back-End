@@ -1,5 +1,4 @@
 const { default: mongoose } = require("mongoose");
-const userModels = require("../../Models/UserSchema");
 
 class WalletService {
   constructor({
@@ -19,8 +18,24 @@ class WalletService {
     try {
       // Validate input parameters
       if (!userId) throw new Error("User ID is required");
-      if (!amount || typeof amount !== "number" || amount <= 0)
+
+      // Parse amount to number if it's a string
+      let parsedAmount = amount;
+      if (typeof amount === "string") {
+        parsedAmount = parseFloat(amount);
+        // Check if parsing was successful
+        if (isNaN(parsedAmount)) {
+          throw new Error("Amount must be a valid number");
+        }
+      }
+
+      if (
+        !parsedAmount ||
+        typeof parsedAmount !== "number" ||
+        parsedAmount <= 0
+      )
         throw new Error("Valid positive amount is required");
+
       if (!currency || typeof currency !== "string")
         throw new Error("Currency is required");
 
@@ -28,7 +43,7 @@ class WalletService {
       const userObjectId = new mongoose.Types.ObjectId(userId);
 
       // Find user - use await
-      const user = await userModels.findOne({ _id: userObjectId });
+      const user = await this.userModel.findOne({ _id: userObjectId });
       if (!user) throw new Error("User not found");
 
       // Check if user already has pending deposit
@@ -56,7 +71,7 @@ class WalletService {
 
       // Convert amount to smallest unit (kobo/cents)
       const conversionRate = 100; // 1 USD = 100 cents
-      const creditedAmountInKobo = Math.round(amount * conversionRate);
+      const creditedAmountInKobo = Math.round(parsedAmount * conversionRate); // Use parsedAmount
 
       // Update wallet pending amount
       wallet.pending += creditedAmountInKobo;
@@ -88,12 +103,15 @@ class WalletService {
         transactionId: transaction._id,
       });
 
-      // Optional: Send notification to user
-      // await this.sendDepositNotification(user.email, amount, currency);
-
       return {
         success: true,
         message: "Deposit request submitted successfully",
+        data: {
+          transactionId: transaction._id,
+          amount: parsedAmount,
+          currency: currency.toUpperCase(),
+          status: "pending",
+        },
       };
     } catch (error) {
       console.error("Error in requestDeposit:", error);
@@ -123,15 +141,10 @@ class WalletService {
       total,
       totalPages: Math.ceil(total / limit),
       transactions,
-      // user,
-      // transactionStatus,
     };
   }
   // Admin confirms deposit (partial or full)
-  async confirmDeposit(adminId, userId, creditedAmount, transactionId) {
-    // const isAdmin = await userModels.findById(adminId);
-    // if (!isAdmin) throw new Error("Admin not found");
-    // if (isAdmin.role !== "admin") throw new Error("Admin not authorized");
+  async confirmDeposit(userId, creditedAmount, transactionId) {
     const adminTransaction = await this.AdminTransactionModel.findOne({
       transactionId,
     });
@@ -148,6 +161,7 @@ class WalletService {
     const creditedAmountInKobo = creditedAmount * 100;
 
     wallet.pending -= creditedAmountInKobo;
+    wallet.totalDeposits += creditedAmountInKobo;
     wallet.balance += creditedAmountInKobo;
 
     await wallet.save();

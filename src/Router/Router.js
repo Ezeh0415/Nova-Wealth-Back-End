@@ -73,16 +73,18 @@ const dashboardService = new DashBoardService({
   UserModel: User,
 });
 const paymentService = new WalletService({
-  UserModel: User,
+  userModel: User,
   WalletModel: WalletSchema,
   TransactionModel: TransactionSchema,
   AdminTransactionModel: AdminTransactionSchema,
 });
 
 const investmentService = new InvestmentService({
+  userModels: User,
   AdminTransactionModel: AdminTransactionSchema,
   InvestmentModel: InvestmentSchema,
   WalletModel: WalletSchema,
+  TransactionModel: TransactionSchema,
 });
 
 const cryptoWalletService = new CryptoWalletService(CryptoWalletSchema);

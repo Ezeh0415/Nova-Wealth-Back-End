@@ -36,7 +36,7 @@ class Investment {
         roi,
         investmentType,
         investmentStartDate,
-        investmentEndDate
+        investmentEndDate,
       );
 
       return res.status(200).json(investment);

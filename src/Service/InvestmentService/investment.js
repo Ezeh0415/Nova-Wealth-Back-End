@@ -1,10 +1,17 @@
 const { default: mongoose } = require("mongoose");
-const userModels = require("../../Models/UserSchema");
 class InvestmentService {
-  constructor({AdminTransactionModel, InvestmentModel, WalletModel }) {
+  constructor({
+    userModels,
+    AdminTransactionModel,
+    InvestmentModel,
+    WalletModel,
+    TransactionModel,
+  }) {
+    this.userModels = userModels;
     this.AdminTransactionModel = AdminTransactionModel;
     this.InvestmentModel = InvestmentModel;
     this.WalletModel = WalletModel;
+    this.TransactionModel = TransactionModel;
   }
 
   // create investment
@@ -41,6 +48,13 @@ class InvestmentService {
       throw new Error("Insufficient balance");
     }
 
+    // Convert userId to ObjectId
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Find user - use await
+    const user = await this.userModels.findById(userObjectId);
+    if (!user) throw new Error("User not found");
+
     // deduct the amount from the wallet
     const creditedAmountInKobo = amount * 100;
     await this.WalletModel.updateOne(
@@ -57,24 +71,19 @@ class InvestmentService {
     });
     await investment.save();
 
-    // Convert userId to ObjectId
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-
-    // Find user - use await
-    const user = await userModels.findOne({ _id: userObjectId });
-    if (!user) throw new Error("User not found");
-
-    await this.AdminTransactionModel.create({
+    const invest = this.AdminTransactionModel.create({
       userId: userObjectId,
       fullName: user.fullName,
       userName: user.userName,
       email: user.email,
       type: "investment",
       creditedAmount: creditedAmountInKobo,
-      currency: currency.toUpperCase(),
       status: "active",
-      transactionId: transaction._id,
     });
+
+    if (!invest) {
+      throw new Error("invest not found");
+    }
 
     return investment;
   }
@@ -121,7 +130,7 @@ class InvestmentService {
 
       // Update investment
 
-      inv.totalReturns = (inv.totalReturns || 0) + profit;
+      inv.TotalReturns = (inv.TotalReturns || 0) + profit;
       inv.lastRoiAt = now;
       await inv.save();
 
@@ -143,7 +152,7 @@ class InvestmentService {
   }
 
   async completeInvestment(investmentId) {
-    const investment = await this.Investment.findById(investmentId);
+    const investment = await this.InvestmentModel.findById(investmentId);
     if (!investment) {
       throw new Error("Investment not found");
     }
@@ -152,7 +161,7 @@ class InvestmentService {
       return; // silently ignore or log
     }
 
-    const wallet = await this.Wallet.findOne({
+    const wallet = await this.WalletModel.findOne({
       userId: investment.userId,
     });
 
@@ -160,9 +169,13 @@ class InvestmentService {
       throw new Error("Wallet not found");
     }
 
+    const transaction = await this.TransactionModel.find({
+      userId: investment.userId,
+    });
+
     // Return capital + ROI
-    wallet.balance += investment.amount + investment.invBalance;
-    wallet.totalReturn += investment.invBalance;
+    wallet.balance += investment.amount + wallet.invBalance;
+    wallet.totalReturn += wallet.invBalance;
     wallet.invBalance = 0;
 
     await wallet.save();
@@ -171,6 +184,10 @@ class InvestmentService {
     investment.investmentEndDate = new Date();
 
     await investment.save();
+
+    transaction.status = "completed";
+
+    await transaction.save();
 
     return investment;
   }

@@ -33,11 +33,6 @@ const AdminSchema = new mongoose.Schema(
     status: {
       type: String,
     },
-    transactionId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
 
     currency: {
       type: String,
