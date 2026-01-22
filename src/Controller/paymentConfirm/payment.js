@@ -7,6 +7,8 @@ class Payment {
     this.AdminGetTransaction = this.AdminGetTransaction.bind(this);
     this.confirmDeposit = this.confirmDeposit.bind(this);
     this.cancleDeposit = this.cancleDeposit.bind(this);
+    this.WithdrawalRequest = this.WithdrawalRequest.bind(this);
+    this.confirmWithdrawal = this.confirmWithdrawal.bind(this);
   }
 
   async requestDeposit(req, res) {
@@ -72,6 +74,46 @@ class Payment {
       const data = await this.Transaction.cancleDeposit(
         req.user.id,
         userId,
+        transactionId,
+      );
+      return res.status(200).json(data);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  }
+
+  async WithdrawalRequest(req, res) {
+    const { amount, paymentType, walletAddress } = req.body;
+
+    if (!amount) {
+      return res.status(400).json({ message: "Amount is required" });
+    }
+    const currency = paymentType;
+    try {
+      const data = await this.Transaction.WithdrawalRequest(
+        req.user.id,
+        amount,
+        currency,
+        walletAddress,
+      );
+      return res.status(200).json(data);
+    } catch (err) {
+      return res.status(500).json({ message: err.message });
+    }
+  }
+
+  async confirmWithdrawal(req, res) {
+    const { userId, creditedAmount, transactionId } = req.body;
+
+    if (!userId || !creditedAmount || !transactionId) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    try {
+      const data = await this.Transaction.confirmWithdrawal(
+        req.user.id,
+        userId,
+        creditedAmount,
         transactionId,
       );
       return res.status(200).json(data);

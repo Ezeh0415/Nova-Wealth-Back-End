@@ -39,6 +39,11 @@ const AdminSchema = new mongoose.Schema(
       default: "usdt",
     },
 
+    walletAddress:{
+      type: String,
+      default:null,
+    },
+
     isConfirmed: {
       type: String,
       enum: ["true", "false", "pending"],

@@ -151,6 +151,13 @@ Router.post(
 );
 
 Router.post(
+  "/withdraw",
+  Require_Api_key,
+  Require_jwt_key,
+  payment.WithdrawalRequest,
+);
+
+Router.post(
   "/invest",
   Require_Api_key,
   investmentValidator,
@@ -194,6 +201,13 @@ Router.get(
   Require_Api_key,
   Require_jwt_key,
   payment.AdminGetTransaction,
+);
+
+Router.post(
+  "/Transactions",
+  Require_Api_key,
+  Require_jwt_key,
+  payment.confirmWithdrawal,
 );
 
 Router.post(
