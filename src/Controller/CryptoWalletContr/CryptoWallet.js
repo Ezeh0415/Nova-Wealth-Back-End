@@ -5,6 +5,7 @@ class CryptoWalletContr {
     // bind this to the class
 
     this.getCryptoWallet = this.getCryptoWallet.bind(this);
+    this.CreateCryptoWallet = this.CreateCryptoWallet.bind(this);
     this.UpdateCryptoWallet = this.UpdateCryptoWallet.bind(this);
     this.DeleteCryptoWallet = this.DeleteCryptoWallet.bind(this);
   }
@@ -24,7 +25,7 @@ class CryptoWalletContr {
     }
   }
 
-  async UpdateCryptoWallet(req, res) {
+  async CreateCryptoWallet(req, res) {
     try {
       const { CryptoName, CryptoAddress } = req.body;
       if (!CryptoName || !CryptoAddress) {
@@ -34,12 +35,36 @@ class CryptoWalletContr {
         });
       }
 
-      await this.CryptoWalletService.UpdateCryptoWallet(
+      await this.CryptoWalletService.CreateCryptoWallet(
         CryptoName,
-        CryptoAddress
+        CryptoAddress,
       );
-      res.status(200).json({
-        status: "success",
+      return res.status(200).json({
+        success: true,
+        message: "Wallet created successfully",
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: error.message,
+      });
+    }
+  }
+
+  async UpdateCryptoWallet(req, res) {
+    try {
+      const { userId, CryptoAddress } = req.body;
+      if (!userId || !CryptoAddress) {
+        return res.status(400).json({
+          status: "error",
+          message: "Please provide all the required fields",
+        });
+      }
+
+      await this.CryptoWalletService.UpdateCryptoWallet(userId, CryptoAddress);
+      return res.status(200).json({
+        success: true,
+        message: "Wallet updated successfully",
       });
     } catch (error) {
       res.status(500).json({
@@ -60,8 +85,9 @@ class CryptoWalletContr {
       }
 
       await this.CryptoWalletService.DeleteCryptoWallet(userId);
-      res.status(200).json({
-        status: "success",
+      return res.status(200).json({
+        success: true,
+        message: "Wallet deleted successfully",
       });
     } catch (error) {
       res.status(500).json({

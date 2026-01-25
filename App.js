@@ -80,7 +80,7 @@ const apiLimiter = rateLimit({
 });
 
 //  Apply limiter only where needed
-app.use("/api", apiLimiter);
+// app.use("/api", apiLimiter);
 
 // db connection
 connectDB();

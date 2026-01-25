@@ -178,6 +178,7 @@ class WalletService {
         throw new Error("Insufficient balance");
 
       wallet.balance -= creditedAmountInKobo;
+      wallet.pendingWithdraw += creditedAmountInKobo;
       await wallet.save();
 
       const transaction = await this.TransactionModel.create({
@@ -237,84 +238,144 @@ class WalletService {
       transactions,
     };
   }
-  // Admin confirms deposit (partial or full)
+
   async confirmDeposit(userId, creditedAmount, transactionId) {
-    const adminTransaction = await this.AdminTransactionModel.findOne({
-      transactionId,
-    });
-    if (!adminTransaction) throw new Error("Admin transaction not found");
-    if (adminTransaction.isConfirmed === "true")
-      throw new Error("Transaction already confirmed");
-    const wallet = await this.WalletModel.findOne({ userId });
-    if (!wallet) throw new Error("Wallet not found");
+    try {
+      // 1. Find the admin transaction - use findOne instead of find
+      const adminTransaction = await this.AdminTransactionModel.findOne({
+        transactionId: transactionId, // Make sure field name matches your schema
+      });
 
-    const transaction = await this.TransactionModel.findById(transactionId);
-    if (!transaction) throw new Error("Transaction not found");
+      if (!adminTransaction) {
+        throw new Error(
+          `Admin transaction not found with transactionId: ${transactionId}`,
+        );
+      }
 
-    // Reduce pending, increase balance
-    const creditedAmountInKobo = creditedAmount * 100;
+      // 2. Check if already confirmed
+      if (adminTransaction.isConfirmed === "true") {
+        throw new Error("Transaction already confirmed");
+      }
 
-    wallet.pending -= creditedAmountInKobo;
-    wallet.totalDeposits += creditedAmountInKobo;
-    wallet.balance += creditedAmountInKobo;
+      // 3. Find wallet
+      const wallet = await this.WalletModel.findOne({ userId });
+      if (!wallet) {
+        throw new Error(`Wallet not found for userId: ${userId}`);
+      }
 
-    await wallet.save();
+      // 4. Find the main transaction - check if using correct ID field
+      // Is it transactionId or _id? Check your TransactionModel schema
+      let transaction;
 
-    transaction.requestedAmount -= creditedAmount;
-    transaction.creditedAmount = creditedAmount;
-    transaction.status =
-      creditedAmount < transaction.requestedAmount ? "pending" : "completed";
-    await transaction.save();
+      // Try finding by _id first (MongoDB ObjectId)
+      if (/^[0-9a-fA-F]{24}$/.test(transactionId)) {
+        transaction = await this.TransactionModel.findById(transactionId);
+      }
+      // If not found by _id, try finding by transactionId field
+      if (!transaction) {
+        transaction = await this.TransactionModel.findOne({
+          transactionId: transactionId,
+        });
+      }
 
-    adminTransaction.status = "completed";
-    adminTransaction.isConfirmed = "true";
-    await adminTransaction.save();
+      if (!transaction) {
+        throw new Error(
+          `Transaction not found with ID: ${transactionId}. Tried both _id and transactionId fields.`,
+        );
+      }
 
-    return wallet;
+      // 5. Convert amount
+      const creditedAmountInKobo = creditedAmount ;
+
+      // 6. Update wallet
+      wallet.pending -= creditedAmountInKobo;
+      wallet.totalDeposits += creditedAmountInKobo;
+      wallet.balance += creditedAmountInKobo;
+
+      await wallet.save();
+
+      // 7. Update transaction
+      transaction.requestedAmount -= creditedAmount;
+      transaction.creditedAmount = creditedAmount;
+      transaction.status =
+        creditedAmount < transaction.requestedAmount ? "pending" : "completed";
+
+      await transaction.save();
+
+      // 8. Update admin transaction
+      adminTransaction.status = "completed";
+      adminTransaction.isConfirmed = "true";
+
+      await adminTransaction.save();
+
+      return {
+        success: true,
+        message: "Deposit confirmed successfully",
+        wallet,
+        transaction,
+      };
+    } catch (error) {
+      console.error("Error in confirmDeposit:", error);
+      throw error;
+    }
   }
 
   async confirmWithdrawal(userId, creditedAmount, transactionId) {
-    const adminTransaction = await this.AdminTransactionModel.findOne({
-      transactionId,
-    });
-    if (!adminTransaction) throw new Error("Admin transaction not found");
-    if (adminTransaction.isConfirmed === "true")
-      throw new Error("Transaction already confirmed");
-    const wallet = await this.WalletModel.findOne({ userId });
-    if (!wallet) throw new Error("Wallet not found");
-    const transaction = await this.TransactionModel.findById(transactionId);
-    if (!transaction) throw new Error("Transaction not found");
+    try {
+      const adminTransaction = await this.AdminTransactionModel.findOne({
+        transactionId: transactionId,
+      });
 
-    const creditedAmountInKobo = creditedAmount * 100;
+      if (!adminTransaction)
+        throw new Error(
+          `Admin transaction not found with transactionId: ${transactionId}`,
+        );
 
-    if (wallet.balance < creditedAmountInKobo)
-      wallet.totalWithdrawals += creditedAmountInKobo;
-    wallet.balance -= creditedAmountInKobo;
+      if (adminTransaction.isConfirmed === "true")
+        throw new Error("Transaction already confirmed");
 
-    await wallet.save();
-    transaction.requestedAmount -= creditedAmount;
-    transaction.creditedAmount = creditedAmount;
-    transaction.status =
-      creditedAmount < transaction.requestedAmount ? "pending" : "completed";
-    await transaction.save();
+      const wallet = await this.WalletModel.findOne({ userId });
+      if (!wallet) throw new Error("Wallet not found");
 
-    adminTransaction.status = "completed";
-    adminTransaction.isConfirmed = "true";
-    await adminTransaction.save();
+      const transaction = await this.TransactionModel.findById(transactionId);
+      if (!transaction) throw new Error("Transaction not found");
 
-    return wallet;
+      const creditedAmountInKobo = creditedAmount;
+
+      if (wallet.balance < creditedAmountInKobo)
+        wallet.totalWithdrawals += creditedAmountInKobo;
+      wallet.pendingWithdraw -= creditedAmountInKobo;
+
+      await wallet.save();
+
+      transaction.requestedAmount -= creditedAmount;
+      transaction.creditedAmount = creditedAmount;
+      transaction.status =
+        creditedAmount < transaction.requestedAmount ? "pending" : "completed";
+
+      await transaction.save();
+
+      adminTransaction.status = "completed";
+      adminTransaction.isConfirmed = "true";
+
+      await adminTransaction.save();
+
+      return wallet;
+    } catch (error) {
+      console.error("Error in confirmWithdrawal:", error);
+      throw error;
+    }
   }
 
-  async cancleDeposit(adminId, userId, transactionId) {
-    // const isAdmin = await userModels.findById(adminId);
-    // console.log(isAdmin)
-    // if (!isAdmin) throw new Error("Admin not found");
-
-    // if (isAdmin.role !== "admin") throw new Error("Admin not authorized");
+  async cancleDeposit(userId, transactionId) {
     const adminTransaction = await this.AdminTransactionModel.findOne({
-      transactionId,
+      transactionId: transactionId,
     });
-    if (!adminTransaction) throw new Error("Admin transaction not found");
+    if (!adminTransaction)
+      throw new Error(
+        `Admin transaction not found with transactionId: ${transactionId}`,
+      );
+
     if (adminTransaction.isConfirmed === "true")
       throw new Error("Transaction already confirmed");
 
@@ -335,6 +396,51 @@ class WalletService {
     await adminTransaction.save();
 
     return wallet;
+  }
+
+  async cancleWithdrawal(userId, creditedAmount, transactionId) {
+    try {
+      const adminTransaction = await this.AdminTransactionModel.findOne({
+        transactionId: transactionId,
+      });
+
+      if (!adminTransaction)
+        throw new Error(
+          `Admin transaction not found with transactionId: ${transactionId}`,
+        );
+
+      if (adminTransaction.isConfirmed === "true")
+        throw new Error("Transaction already confirmed");
+
+      const transaction = await this.TransactionModel.findById(transactionId);
+      if (!transaction) throw new Error("Transaction not found");
+
+      const wallet = await this.WalletModel.findOne({ userId });
+      if (!wallet) throw new Error("Wallet not found");
+
+      transaction.status = "canceled";
+      await transaction.save();
+
+      // 5. Convert amount
+      const creditedAmountInKobo = creditedAmount * 100;
+
+      // Reduce pending withdrawal balance
+      wallet.pendingWithdraw -= creditedAmountInKobo;
+      await wallet.save();
+
+      adminTransaction.isConfirmed = "false";
+      await adminTransaction.save();
+
+      return {
+        success: true,
+        message: "withdrawal cancle successfully",
+        wallet,
+        transaction,
+      };
+    } catch (error) {
+      console.error("Error in cancleWithdrawal:", error);
+      throw error;
+    }
   }
 }
 

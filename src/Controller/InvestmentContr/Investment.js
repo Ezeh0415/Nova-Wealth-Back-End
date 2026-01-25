@@ -17,8 +17,11 @@ class Investment {
       investmentEndDate,
     } = req.body;
 
+    const userId = req.user.id;
+
     try {
       if (
+        !userId ||
         !amount ||
         !roi ||
         !investmentType ||
@@ -31,7 +34,7 @@ class Investment {
       }
 
       const investment = await this.InvestmentService.invest(
-        req.user.id,
+        userId,
         amount,
         roi,
         investmentType,

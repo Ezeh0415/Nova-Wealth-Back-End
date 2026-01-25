@@ -1,6 +1,13 @@
 const { body } = require("express-validator");
 
 exports.investmentValidator = [
+  // // id
+  // body("userId")
+  //   .exists()
+  //   .withMessage("User ID is required")
+  //   .custom((value) => mongoose.Types.ObjectId.isValid(value))
+  //   .withMessage("Invalid user ID"),
+
   // amount
   body("amount")
     .exists()
@@ -19,7 +26,7 @@ exports.investmentValidator = [
     .custom((value) => value > 0)
     .withMessage("roi must be greater than 0")
     .toInt(),
-  
+
   // investmentType
   body("investmentType")
     .exists()

@@ -45,6 +45,7 @@ class Payment {
 
   async confirmDeposit(req, res) {
     const { userId, creditedAmount, transactionId } = req.body;
+    
 
     if (!userId || !creditedAmount || !transactionId) {
       return res.status(400).json({ message: "All fields are required" });
@@ -52,7 +53,7 @@ class Payment {
 
     try {
       const data = await this.Transaction.confirmDeposit(
-        req.user.id,
+        // req.user.id,
         userId,
         creditedAmount,
         transactionId,
@@ -72,7 +73,7 @@ class Payment {
 
     try {
       const data = await this.Transaction.cancleDeposit(
-        req.user.id,
+        // req.user.id,
         userId,
         transactionId,
       );
@@ -111,7 +112,7 @@ class Payment {
 
     try {
       const data = await this.Transaction.confirmWithdrawal(
-        req.user.id,
+        // req.user.id,
         userId,
         creditedAmount,
         transactionId,

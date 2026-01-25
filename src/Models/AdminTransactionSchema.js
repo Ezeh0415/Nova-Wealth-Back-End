@@ -7,6 +7,12 @@ const AdminSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
+
+    transactionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
     fullName: {
       type: String,
       required: true,
@@ -39,9 +45,9 @@ const AdminSchema = new mongoose.Schema(
       default: "usdt",
     },
 
-    walletAddress:{
+    walletAddress: {
       type: String,
-      default:null,
+      default: null,
     },
 
     isConfirmed: {

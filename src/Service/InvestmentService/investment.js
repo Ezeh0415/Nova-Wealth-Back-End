@@ -24,68 +24,114 @@ class InvestmentService {
     investmentStartDate,
     investmentEndDate,
   ) {
-    if (
-      !userId ||
-      !amount ||
-      !roi ||
-      !investmentType ||
-      !investmentStartDate ||
-      !investmentEndDate
-    ) {
-      throw new Error("Invalid input");
+    try {
+     
+      // Validate inputs
+      if (
+        !userId ||
+        !amount ||
+        !roi ||
+        !investmentType ||
+        !investmentStartDate ||
+        !investmentEndDate
+      ) {
+        throw new Error("All fields are required");
+      }
+
+      if (amount <= 0) {
+        throw new Error("Amount must be greater than 0");
+      }
+
+      // Convert userId to ObjectId
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+
+      // Find user
+      const user = await this.userModels.findById(userObjectId);
+      if (!user) {
+        throw new Error("User not found");
+      }
+
+      // Find wallet
+      const wallet = await this.WalletModel.findOne({ userId: userObjectId });
+      if (!wallet) {
+        throw new Error("Wallet not found for user");
+      }
+
+      // Convert amount to kobo (cents)
+      const creditedAmountInKobo = amount * 100;
+
+      // Check balance
+      if (wallet.balance < creditedAmountInKobo) {
+        throw new Error(
+          `Insufficient balance. Available: $${wallet.balance / 100}, Required: $${amount}`,
+        );
+      }
+
+      // Deduct the amount from the wallet
+      await this.WalletModel.updateOne(
+        { userId: userObjectId }, // Fixed: should be userId, not userObjectId
+        { $inc: { balance: -creditedAmountInKobo } },
+      );
+
+      // Create investment
+      const investment = new this.InvestmentModel({
+        userId: userObjectId,
+        amount: creditedAmountInKobo, // Store in kobo
+        roi,
+        investmentType,
+        investmentStartDate: new Date(investmentStartDate),
+        investmentEndDate: new Date(investmentEndDate),
+        status: "active",
+      });
+
+      await investment.save();
+
+      // Create transaction record
+      const transaction = new this.TransactionModel({
+        userId: userObjectId,
+        type: "investment",
+        creditedAmount: creditedAmountInKobo,
+        description: `New investment in ${investmentType} plan`,
+        status: "active",
+      });
+
+      await transaction.save();
+
+      // Create admin transaction record
+      const adminTransaction = new this.AdminTransactionModel({
+        userId: userObjectId,
+        transactionId: investment._id,
+        fullName: user.fullName,
+        userName: user.userName,
+        email: user.email,
+        type: "investment",
+        creditedAmount: creditedAmountInKobo,
+        status: "active",
+      });
+
+      await adminTransaction.save();
+
+      // Return success response
+      return {
+        success: true,
+        message: "Investment created successfully",
+        investment: {
+          id: investment._id,
+          amount: investment.amount / 100, // Return in dollars
+          roi: investment.roi,
+          type: investment.investmentType,
+          startDate: investment.investmentStartDate,
+          endDate: investment.investmentEndDate,
+          status: investment.status,
+        },
+        wallet: {
+          newBalance: (wallet.balance - creditedAmountInKobo) / 100,
+        },
+      };
+    } catch (error) {
+      console.error("❌ Investment creation error:", error.message);
+      throw error;
     }
-
-    if (amount <= 0) {
-      throw new Error("Amount must be greater than 0");
-    }
-
-    const wallet = await this.WalletModel.findOne({ userId });
-    if (!wallet) {
-      throw new Error("User does not exist");
-    }
-
-    if (wallet.balance < amount) {
-      throw new Error("Insufficient balance");
-    }
-
-    // Convert userId to ObjectId
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-
-    // Find user - use await
-    const user = await this.userModels.findById(userObjectId);
-    if (!user) throw new Error("User not found");
-
-    // deduct the amount from the wallet
-    const creditedAmountInKobo = amount * 100;
-    await this.WalletModel.updateOne(
-      { userId },
-      { $inc: { balance: -creditedAmountInKobo } },
-    );
-    const investment = new this.InvestmentModel({
-      userId,
-      amount: creditedAmountInKobo,
-      roi,
-      investmentType,
-      investmentStartDate,
-      investmentEndDate,
-    });
-    await investment.save();
-
-    const invest = this.AdminTransactionModel.create({
-      userId: userObjectId,
-      fullName: user.fullName,
-      userName: user.userName,
-      email: user.email,
-      type: "investment",
-      creditedAmount: creditedAmountInKobo,
-      status: "active",
-    });
-
-    if (!invest) {
-      throw new Error("invest not found");
-    }
-
-    return investment;
   }
 
   /**

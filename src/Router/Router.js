@@ -10,6 +10,7 @@ const ForgotPasswordController = require("../Controller/ForgotPasswordContr/Forg
 const DashBoardContr = require("../Controller/DashBoardContr/DashBoardContr");
 const InvestmentContr = require("../Controller/InvestmentContr/Investment");
 const CryptoWalletContr = require("../Controller/CryptoWalletContr/CryptoWallet");
+const AdminDashboardContr = require("../Controller/AdminDashboard/AdminDashboard");
 
 // service section
 const SignUpService = require("../Service/SignUpService/SignUp");
@@ -21,6 +22,7 @@ const DashBoardService = require("../Service/DashBoardService/DashBoardService")
 const WalletService = require("../Service/TransactionService/Transaction");
 const InvestmentService = require("../Service/InvestmentService/investment");
 const CryptoWalletService = require("../Service/CryptoWalletService/CryptoWallet");
+const AdminDashboardService = require("../Service/AdminDashboard/AdminDashboard");
 
 // schema section
 const User = require("../Models/UserSchema");
@@ -88,6 +90,12 @@ const investmentService = new InvestmentService({
 });
 
 const cryptoWalletService = new CryptoWalletService(CryptoWalletSchema);
+const dashboardAdminService = new AdminDashboardService({
+  WalletModel: WalletSchema,
+  TransactionModel: TransactionSchema,
+  InvestmentModel: InvestmentSchema,
+  UserModel: User,
+});
 
 // controller bind to service section
 const SignupController = new SignUpController(SignupService);
@@ -101,6 +109,7 @@ const DashBoardController = new DashBoardContr(dashboardService);
 const payment = new Payment(paymentService);
 const investmentController = new InvestmentContr(investmentService);
 const cryptoWalletController = new CryptoWalletContr(cryptoWalletService);
+const DashBoardAdminController = new AdminDashboardContr(dashboardAdminService);
 
 // router sections
 Router.post(
@@ -166,9 +175,19 @@ Router.post(
   investmentController.invest,
 );
 
-cron.schedule("*/2 * * * * *", () => {
-  investmentController.processDailyROI();
-});
+// For testing - runs every 2 minutes
+cron.schedule(
+  "*/2 * * * *",
+  () => {
+    console.log(`Processing ROI at: ${new Date().toISOString()}`);
+    investmentController.processDailyROI();
+  },
+  {
+    scheduled: true,
+    timezone: "Africa/Lagos",
+    recoverMissedExecutions: false, // Prevent backlog
+  },
+);
 
 Router.post("/refreshToken", Require_Api_key, refreshToken);
 
@@ -180,6 +199,26 @@ Router.get(
 );
 
 // admin section
+Router.get(
+  "/Transactions",
+  Require_Api_key,
+  Require_jwt_key,
+  payment.AdminGetTransaction,
+);
+
+Router.post(
+  "/dashboardAdminUsers",
+  Require_Api_key,
+  Require_jwt_key,
+  DashBoardAdminController.getAdminDashboardUsers,
+);
+
+Router.post(
+  "/dashboardAdminWallets",
+  Require_Api_key,
+  Require_jwt_key,
+  DashBoardAdminController.getAdminDashBoardWallets,
+);
 Router.post(
   "/AdminSignup",
   registerValidator,
@@ -196,15 +235,8 @@ Router.post(
   adminLoginController.login,
 );
 
-Router.get(
-  "/Transactions",
-  Require_Api_key,
-  Require_jwt_key,
-  payment.AdminGetTransaction,
-);
-
 Router.post(
-  "/Transactions",
+  "/confirmWithdraw",
   Require_Api_key,
   Require_jwt_key,
   payment.confirmWithdrawal,
@@ -212,6 +244,13 @@ Router.post(
 
 Router.post(
   "/addWallet",
+  Require_Api_key,
+  Require_jwt_key,
+  cryptoWalletController.CreateCryptoWallet,
+);
+
+Router.post(
+  "/updateWallet",
   Require_Api_key,
   Require_jwt_key,
   cryptoWalletController.UpdateCryptoWallet,
