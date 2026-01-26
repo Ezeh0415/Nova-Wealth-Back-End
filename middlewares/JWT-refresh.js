@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const User = require("../models/User");
+const User = require("../src/Models/UserSchema");
 
 const refreshToken = async (req, res) => {
   try {
