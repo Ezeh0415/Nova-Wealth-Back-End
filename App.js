@@ -47,6 +47,7 @@ app.use((req, res, next) => {
     "http://localhost:3000",
     "http://localhost:3001",
     "http://localhost:8080",
+    "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app",
   );
   res.header("Access-Control-Allow-Credentials", "true");
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
