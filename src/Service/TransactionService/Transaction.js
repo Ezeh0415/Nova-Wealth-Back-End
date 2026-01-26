@@ -360,7 +360,11 @@ class WalletService {
 
       await adminTransaction.save();
 
-      return wallet;
+      return {
+        success: true,
+        message: "withdraw confirmed successfully",
+        wallet,
+      };
     } catch (error) {
       console.error("Error in confirmWithdrawal:", error);
       throw error;
@@ -395,7 +399,11 @@ class WalletService {
     adminTransaction.isConfirmed = "false";
     await adminTransaction.save();
 
-    return wallet;
+    return {
+        success: true,
+        message: "deposit cancled",
+        wallet,
+      };
   }
 
   async cancleWithdrawal(userId, creditedAmount, transactionId) {
