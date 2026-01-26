@@ -20,9 +20,19 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    // In User model
     refreshToken: {
       type: String,
-      default: "",
+      select: false, // Don't return in queries by default
+    },
+    tokenVersion: {
+      type: Number,
+      default: 0,
+    },
+    lastTokenRefresh: Date,
+    isActive: {
+      type: Boolean,
+      default: true,
     },
     otp: {
       type: String,

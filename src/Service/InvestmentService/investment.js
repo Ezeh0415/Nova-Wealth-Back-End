@@ -25,7 +25,6 @@ class InvestmentService {
     investmentEndDate,
   ) {
     try {
-     
       // Validate inputs
       if (
         !userId ||
@@ -191,7 +190,7 @@ class InvestmentService {
         userId: inv.userId,
         investmentId: inv._id,
         type: "profit",
-        amount: profit,
+        creditedAmount: profit,
         description: "Daily investment ROI",
       });
     }
