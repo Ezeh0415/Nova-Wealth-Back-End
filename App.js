@@ -16,6 +16,7 @@ dotenv.config();
 // Specific origin configuration
 const allowedOrigins = [
   "http://localhost:5174",
+  "http://localhost:5175",
   "http://localhost:8080",
   "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app",
 ];
