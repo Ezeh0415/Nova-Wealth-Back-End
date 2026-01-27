@@ -15,6 +15,7 @@ dotenv.config();
 //  CORS (FIRST)
 // Specific origin configuration
 const allowedOrigins = [
+  "https://althworldf.onrender.com",
   "http://localhost:5174",
   "http://localhost:5175",
   "http://localhost:8080",
@@ -45,6 +46,7 @@ app.use(cors(corsOptions));
 app.use((req, res, next) => {
   res.header(
     "Access-Control-Allow-Origin",
+    "https://althworldf.onrender.com",
     "http://localhost:5174",
     "http://localhost:5175",
     "http://localhost:8080",
