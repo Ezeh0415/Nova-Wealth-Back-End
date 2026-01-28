@@ -14,11 +14,23 @@ class SignUpController {
 
   async signUp(req, res) {
     try {
-      const { fullName, userName, email, password } = req.body;
+      const { fullName, userName, email, password, captchaToken } = req.body;
 
       // 1️⃣ Validate fields
       if (!fullName || !userName || !email || !password) {
         return res.status(400).json({ message: "All fields are required" });
+      }
+
+      if (!captchaToken) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Captcha token is required" });
+      }
+
+      if (fullName.length < 3 || fullName.length > 50) {
+        return res
+          .status(400)
+          .json({ message: "Full name must be between 3 and 50 characters" });
       }
 
       if (password.length < 8) {
@@ -32,10 +44,22 @@ class SignUpController {
         return res.status(400).json({ message: "Invalid email format" });
       }
 
+      // verify captcha
+      const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`;
+      const googleRes = await axios.post(verifyUrl);
+
+      const { success, score } = googleRes.data;
+
+      if (!success || score < 0.4) {
+        return res
+          .status(400)
+          .json({ success: false, message: "Captcha verification failed" });
+      }
+
       // 2️⃣ Check if user exists
       const existingUser = await this.SignUpService.checkUserExist(
         userName,
-        email
+        email,
       );
 
       if (existingUser) {
@@ -77,7 +101,7 @@ class SignUpController {
       });
 
       // 8️⃣ Return sanitized user
-      const { password: _, refreshToken: __,  ...safeUser } = user.toObject();
+      const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
       return res.status(201).json({
         message: "User created successfully",
