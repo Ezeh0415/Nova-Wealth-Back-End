@@ -14,17 +14,11 @@ class SignUpController {
 
   async signUp(req, res) {
     try {
-      const { fullName, userName, email, password, captchaToken } = req.body;
+      const { fullName, userName, email, password } = req.body;
 
       // 1️⃣ Validate fields
       if (!fullName || !userName || !email || !password) {
         return res.status(400).json({ message: "All fields are required" });
-      }
-
-      if (!captchaToken) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Captcha token is required" });
       }
 
       if (fullName.length < 3 || fullName.length > 50) {
@@ -45,16 +39,6 @@ class SignUpController {
       }
 
       // verify captcha
-      const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`;
-      const googleRes = await axios.post(verifyUrl);
-
-      const { success, score } = googleRes.data;
-
-      if (!success || score < 0.4) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Captcha verification failed" });
-      }
 
       // 2️⃣ Check if user exists
       const existingUser = await this.SignUpService.checkUserExist(
@@ -74,6 +58,14 @@ class SignUpController {
       // 3️⃣ Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
+      // Log reCAPTCHA score if available
+      if (req.recaptchaData) {
+        console.log(
+          `📊 Signup with reCAPTCHA score: ${req.recaptchaData.score}`,
+        );
+      }
+
+      
       // 4️⃣ Create user
       const user = await this.SignUpService.signUp({
         fullName,

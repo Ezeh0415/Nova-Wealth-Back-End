@@ -60,6 +60,7 @@ const { resetPassword } = require("../../middlewares/Validators/resetPassword");
 const {
   AdminLoginValidator,
 } = require("../../middlewares/Validators/AdminLoginValidation");
+const verifyRecaptcha = require("../../middlewares/VerifyRecaptcha");
 
 // service bind to schema section
 
@@ -116,6 +117,7 @@ Router.post(
   "/signup",
   registerValidator,
   validate,
+  verifyRecaptcha,
   Require_Api_key,
   SignupController.signUp,
 );
