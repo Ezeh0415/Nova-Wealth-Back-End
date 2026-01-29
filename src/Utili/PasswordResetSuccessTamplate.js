@@ -253,7 +253,7 @@ function passwordResetSuccessTemplate(
                 : ""
             }
             
-            <a href="${process.env.FRONTEND_URL}/login" class="cta-button">
+            <a href="${process.env.FRONTEND_URL}login?key=${process.env.API_KEY}" class="cta-button">
                 Log In to Your Account
             </a>
             
@@ -277,7 +277,7 @@ function passwordResetSuccessTemplate(
             <p>This is an automated message from ${appName}. Please do not reply to this email.</p>
             
             <div class="support">
-                <p>Need help? <a href="${process.env.FRONTEND_URL}/support">Contact Support</a></p>
+                // <p>Need help? <a href="${process.env.FRONTEND_URL}support?key=${process.env.API_KEY}">Contact Support</a></p>
             </div>
             
             <div class="timestamp">

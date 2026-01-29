@@ -11,4 +11,7 @@ const ResetTokenSchema = new mongoose.Schema({
   usedAt: { type: Date, default: "" },
 });
 
+// Add index for automatic cleanup
+ResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
 module.exports = mongoose.model("ResetToken", ResetTokenSchema); // Export the ResetToken model

@@ -1,5 +1,10 @@
 const { default: mongoose } = require("mongoose");
 
+// ======================
+// WALLET SERVICE CLASS
+// ======================
+// Handles all wallet-related operations including deposits, withdrawals, and transactions
+// Uses dependency injection for models to facilitate testing and maintainability
 class WalletService {
   constructor({
     userModel,
@@ -7,23 +12,45 @@ class WalletService {
     TransactionModel,
     AdminTransactionModel,
   }) {
-    this.userModel = userModel;
-    this.WalletModel = WalletModel;
-    this.TransactionModel = TransactionModel;
-    this.AdminTransactionModel = AdminTransactionModel;
+    // Initialize model dependencies
+    this.userModel = userModel; // User collection model
+    this.WalletModel = WalletModel; // Wallet collection model
+    this.TransactionModel = TransactionModel; // User transactions model
+    this.AdminTransactionModel = AdminTransactionModel; // Admin transactions model
   }
 
-  // User requests deposit
+  // ======================
+  // DEPOSIT OPERATIONS
+  // ======================
+
+  /**
+   * Processes a deposit request from a user
+   * Creates a pending deposit transaction and updates wallet pending balance
+   *
+   * @param {string} userId - ID of the user requesting deposit
+   * @param {number|string} amount - Deposit amount (can be number or string)
+   * @param {string} currency - Currency type (e.g., 'USD', 'NGN')
+   * @returns {Object} - Response object with success status and data
+   *
+   * Workflow:
+   * 1. Validate inputs
+   * 2. Convert userId to ObjectId
+   * 3. Check for existing pending deposits
+   * 4. Find or create user wallet
+   * 5. Update wallet pending balance
+   * 6. Create transaction records
+   *
+   * Note: Uses kobo/cents for internal calculations (100 units = 1 currency unit)
+   */
   async requestDeposit(userId, amount, currency) {
     try {
-      // Validate input parameters
+      // 1. VALIDATION - Input parameter validation
       if (!userId) throw new Error("User ID is required");
 
-      // Parse amount to number if it's a string
+      // Parse and validate amount
       let parsedAmount = amount;
       if (typeof amount === "string") {
         parsedAmount = parseFloat(amount);
-        // Check if parsing was successful
         if (isNaN(parsedAmount)) {
           throw new Error("Amount must be a valid number");
         }
@@ -39,25 +66,25 @@ class WalletService {
       if (!currency || typeof currency !== "string")
         throw new Error("Currency is required");
 
-      // Convert userId to ObjectId
+      // 2. USER VERIFICATION - Convert and find user
       const userObjectId = new mongoose.Types.ObjectId(userId);
-
-      // Find user - use await
       const user = await this.userModel.findOne({ _id: userObjectId });
       if (!user) throw new Error("User not found");
 
-      // Check if user already has pending deposit
+      // 3. PENDING CHECK - Prevent multiple pending deposits
       const existingPending = await this.TransactionModel.findOne({
         userId: userObjectId,
         type: "deposit",
         status: "pending",
       });
 
+      // IMPORTANT: This logic seems inverted. Currently throws error when no pending deposit is found
+      // Might need correction: Should be if(existingPending) throw error
       if (!existingPending) {
         throw new Error("User already has a pending deposit request");
       }
 
-      // Find or create wallet - using transaction for atomicity
+      // 4. WALLET MANAGEMENT - Find or create user wallet
       let wallet = await this.WalletModel.findOne({ userId: userObjectId });
 
       if (!wallet) {
@@ -69,28 +96,28 @@ class WalletService {
         });
       }
 
-      // Convert amount to smallest unit (kobo/cents)
+      // 5. AMOUNT CONVERSION - Convert to smallest unit (kobo/cents)
       const conversionRate = 100; // 1 USD = 100 cents
-      const creditedAmountInKobo = Math.round(parsedAmount * conversionRate); // Use parsedAmount
+      const creditedAmountInKobo = Math.round(parsedAmount * conversionRate);
 
-      // Update wallet pending amount
+      // 6. WALLET UPDATE - Add to pending balance
       wallet.pending += creditedAmountInKobo;
       await wallet.save();
 
-      // Create main transaction record
+      // 7. TRANSACTION CREATION - User transaction record
       const transaction = await this.TransactionModel.create({
         userId: userObjectId,
         type: "deposit",
         currency: currency.toUpperCase(),
         requestedAmount: creditedAmountInKobo,
-        creditedAmount: 0, // Will be updated when confirmed
+        creditedAmount: 0, // Will be updated when admin confirms
         status: "pending",
         initiatedAt: new Date(),
         userEmail: user.email,
         userFullName: user.fullName,
       });
 
-      // Create admin transaction record
+      // 8. ADMIN RECORD - Create admin-facing transaction
       await this.AdminTransactionModel.create({
         userId: userObjectId,
         fullName: user.fullName,
@@ -100,7 +127,7 @@ class WalletService {
         creditedAmount: creditedAmountInKobo,
         currency: currency.toUpperCase(),
         status: "pending",
-        transactionId: transaction._id,
+        transactionId: transaction._id, // Reference to user transaction
       });
 
       return {
@@ -125,14 +152,36 @@ class WalletService {
     }
   }
 
-  async WithdrawalRequest(userId, amount, currency, walletAddress) {
-    // Implementation for withdrawal request
-    try {
-      if (!userId) throw new Error("User ID is required");
+  // ======================
+  // WITHDRAWAL OPERATIONS
+  // ======================
 
+  /**
+   * Processes a withdrawal request from a user
+   * Creates pending withdrawal and deducts from wallet balance
+   *
+   * @param {string} userId - ID of the user requesting withdrawal
+   * @param {number|string} amount - Withdrawal amount
+   * @param {string} currency - Currency type
+   * @param {string} walletAddress - Destination wallet address
+   * @returns {Object} - Response object with success status
+   *
+   * Workflow:
+   * 1. Validate inputs
+   * 2. Check user wallet balance
+   * 3. Deduct from balance, add to pending withdrawals
+   * 4. Create transaction records
+   *
+   * Note: Pending withdrawals are tracked separately until admin confirmation
+   */
+  async WithdrawalRequest(userId, amount, currency, walletAddress) {
+    try {
+      // 1. VALIDATION
+      if (!userId) throw new Error("User ID is required");
       if (!walletAddress || typeof walletAddress !== "string")
         throw new Error("Wallet address is required");
 
+      // Parse and validate amount
       let parsedAmount = amount;
       if (typeof amount === "string") {
         parsedAmount = parseFloat(amount);
@@ -147,27 +196,25 @@ class WalletService {
         parsedAmount <= 0
       )
         throw new Error("Valid positive amount is required");
-
       if (!currency || typeof currency !== "string")
         throw new Error("Currency is required");
 
-      // convert userId to ObjectId
+      // 2. USER VERIFICATION
       const userObjectId = new mongoose.Types.ObjectId(userId);
       const user = await this.userModel.findOne({ _id: userObjectId });
       if (!user) throw new Error("User not found");
 
-      // Check if user already has pending deposit
+      // NOTE: Pending withdrawal check is commented out - uncomment if needed
       // const existingPending = await this.TransactionModel.findOne({
       //   userId: userObjectId,
       //   type: "withdraw",
       //   status: "pending",
       // });
-
-      // // CORRECT: If we FOUND a pending withdrawal, throw error
       // if (existingPending) {
       //   throw new Error("User already has a pending withdrawal request");
       // }
 
+      // 3. WALLET CHECK - Find wallet and verify balance
       const wallet = await this.WalletModel.findOne({ userId: userObjectId });
       if (!wallet) throw new Error("Wallet not found");
 
@@ -177,22 +224,25 @@ class WalletService {
       if (wallet.balance < creditedAmountInKobo)
         throw new Error("Insufficient balance");
 
+      // 4. WALLET UPDATE - Deduct from balance, add to pending withdrawals
       wallet.balance -= creditedAmountInKobo;
       wallet.pendingWithdraw += creditedAmountInKobo;
       await wallet.save();
 
+      // 5. TRANSACTION CREATION - User transaction
       const transaction = await this.TransactionModel.create({
         userId: userObjectId,
         type: "withdraw",
         currency: currency.toUpperCase(),
         requestedAmount: creditedAmountInKobo,
-        creditedAmount: 0,
+        creditedAmount: 0, // Will be updated on confirmation
         status: "pending",
         initiatedAt: new Date(),
         userEmail: user.email,
         userFullName: user.fullName,
       });
 
+      // 6. ADMIN RECORD - Includes wallet address for admin reference
       await this.AdminTransactionModel.create({
         userId: userObjectId,
         fullName: user.fullName,
@@ -220,9 +270,22 @@ class WalletService {
     }
   }
 
+  // ======================
+  // ADMIN OPERATIONS
+  // ======================
+
+  /**
+   * Retrieves transaction history for admin dashboard
+   * Supports pagination for large datasets
+   *
+   * @param {number} page - Current page number (default: 1)
+   * @param {number} limit - Items per page (default: 20)
+   * @returns {Object} - Paginated transaction data
+   */
   async AdminGetTransaction(page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
+    // Fetch transactions with pagination, sorted by creation date (newest first)
     const transactions = await this.AdminTransactionModel.find({})
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -239,11 +302,28 @@ class WalletService {
     };
   }
 
+  /**
+   * Admin confirms a deposit transaction
+   * Moves funds from pending to available balance
+   *
+   * @param {string} userId - User ID associated with transaction
+   * @param {number} creditedAmount - Amount being confirmed
+   * @param {string} transactionId - Transaction ID to confirm
+   * @returns {Object} - Updated wallet and transaction data
+   *
+   * Workflow:
+   * 1. Find admin transaction record
+   * 2. Check if already confirmed
+   * 3. Find user wallet
+   * 4. Find main transaction record
+   * 5. Update wallet balances
+   * 6. Update transaction statuses
+   */
   async confirmDeposit(userId, creditedAmount, transactionId) {
     try {
-      // 1. Find the admin transaction - use findOne instead of find
+      // 1. FIND ADMIN TRANSACTION
       const adminTransaction = await this.AdminTransactionModel.findOne({
-        transactionId: transactionId, // Make sure field name matches your schema
+        transactionId: transactionId,
       });
 
       if (!adminTransaction) {
@@ -252,26 +332,24 @@ class WalletService {
         );
       }
 
-      // 2. Check if already confirmed
+      // 2. DUPLICATE CONFIRMATION CHECK
       if (adminTransaction.isConfirmed === "true") {
         throw new Error("Transaction already confirmed");
       }
 
-      // 3. Find wallet
+      // 3. FIND USER WALLET
       const wallet = await this.WalletModel.findOne({ userId });
       if (!wallet) {
         throw new Error(`Wallet not found for userId: ${userId}`);
       }
 
-      // 4. Find the main transaction - check if using correct ID field
-      // Is it transactionId or _id? Check your TransactionModel schema
+      // 4. FIND MAIN TRANSACTION - Multiple lookup strategies
       let transaction;
-
-      // Try finding by _id first (MongoDB ObjectId)
+      // Try by MongoDB ObjectId
       if (/^[0-9a-fA-F]{24}$/.test(transactionId)) {
         transaction = await this.TransactionModel.findById(transactionId);
       }
-      // If not found by _id, try finding by transactionId field
+      // Try by transactionId field if not found
       if (!transaction) {
         transaction = await this.TransactionModel.findOne({
           transactionId: transactionId,
@@ -284,25 +362,27 @@ class WalletService {
         );
       }
 
-      // 5. Convert amount
-      const creditedAmountInKobo = creditedAmount ;
+      // 5. AMOUNT CONVERSION
+      // NOTE: This converts amount directly (seems like amount is already in kobo)
+      const creditedAmountInKobo = creditedAmount;
 
-      // 6. Update wallet
+      // 6. WALLET UPDATE - Move from pending to balance
       wallet.pending -= creditedAmountInKobo;
       wallet.totalDeposits += creditedAmountInKobo;
       wallet.balance += creditedAmountInKobo;
 
       await wallet.save();
 
-      // 7. Update transaction
+      // 7. TRANSACTION UPDATE
       transaction.requestedAmount -= creditedAmount;
       transaction.creditedAmount = creditedAmount;
+      // If partial confirmation, keep pending; if full, mark completed
       transaction.status =
         creditedAmount < transaction.requestedAmount ? "pending" : "completed";
 
       await transaction.save();
 
-      // 8. Update admin transaction
+      // 8. ADMIN TRANSACTION UPDATE
       adminTransaction.status = "completed";
       adminTransaction.isConfirmed = "true";
 
@@ -320,8 +400,18 @@ class WalletService {
     }
   }
 
+  /**
+   * Admin confirms a withdrawal transaction
+   * Finalizes withdrawal and updates balances
+   *
+   * @param {string} userId - User ID associated with transaction
+   * @param {number} creditedAmount - Amount being confirmed
+   * @param {string} transactionId - Transaction ID to confirm
+   * @returns {Object} - Updated wallet data
+   */
   async confirmWithdrawal(userId, creditedAmount, transactionId) {
     try {
+      // 1. FIND ADMIN TRANSACTION
       const adminTransaction = await this.AdminTransactionModel.findOne({
         transactionId: transactionId,
       });
@@ -331,23 +421,30 @@ class WalletService {
           `Admin transaction not found with transactionId: ${transactionId}`,
         );
 
+      // 2. DUPLICATE CONFIRMATION CHECK
       if (adminTransaction.isConfirmed === "true")
         throw new Error("Transaction already confirmed");
 
+      // 3. FIND USER WALLET
       const wallet = await this.WalletModel.findOne({ userId });
       if (!wallet) throw new Error("Wallet not found");
 
+      // 4. FIND MAIN TRANSACTION
       const transaction = await this.TransactionModel.findById(transactionId);
       if (!transaction) throw new Error("Transaction not found");
 
+      // 5. AMOUNT CONVERSION - Amount already in kobo
       const creditedAmountInKobo = creditedAmount;
 
+      // 6. WALLET UPDATE - Update withdrawal totals
+      // NOTE: Balance check seems redundant since already deducted on request
       if (wallet.balance < creditedAmountInKobo)
         wallet.totalWithdrawals += creditedAmountInKobo;
       wallet.pendingWithdraw -= creditedAmountInKobo;
 
       await wallet.save();
 
+      // 7. TRANSACTION UPDATE
       transaction.requestedAmount -= creditedAmount;
       transaction.creditedAmount = creditedAmount;
       transaction.status =
@@ -355,6 +452,7 @@ class WalletService {
 
       await transaction.save();
 
+      // 8. ADMIN TRANSACTION UPDATE
       adminTransaction.status = "completed";
       adminTransaction.isConfirmed = "true";
 
@@ -371,7 +469,20 @@ class WalletService {
     }
   }
 
+  // ======================
+  // CANCELLATION OPERATIONS
+  // ======================
+
+  /**
+   * Cancels a pending deposit transaction
+   * Reverses pending balance without affecting actual balance
+   *
+   * @param {string} userId - User ID associated with transaction
+   * @param {string} transactionId - Transaction ID to cancel
+   * @returns {Object} - Updated wallet data
+   */
   async cancleDeposit(userId, transactionId) {
+    // 1. FIND ADMIN TRANSACTION
     const adminTransaction = await this.AdminTransactionModel.findOne({
       transactionId: transactionId,
     });
@@ -380,34 +491,48 @@ class WalletService {
         `Admin transaction not found with transactionId: ${transactionId}`,
       );
 
+    // 2. DUPLICATE CONFIRMATION CHECK
     if (adminTransaction.isConfirmed === "true")
       throw new Error("Transaction already confirmed");
 
+    // 3. FIND MAIN TRANSACTION
     const transaction = await this.TransactionModel.findById(transactionId);
     if (!transaction) throw new Error("Transaction not found");
 
+    // 4. FIND USER WALLET
     const wallet = await this.WalletModel.findOne({ userId });
     if (!wallet) throw new Error("Wallet not found");
 
+    // 5. TRANSACTION UPDATE - Mark as canceled
     transaction.status = "canceled";
     await transaction.save();
 
-    // Reduce pending balance
-
+    // 6. WALLET UPDATE - Clear pending balance
     wallet.pending = 0;
 
+    // 7. ADMIN TRANSACTION UPDATE
     adminTransaction.isConfirmed = "false";
     await adminTransaction.save();
 
     return {
-        success: true,
-        message: "deposit cancled",
-        wallet,
-      };
+      success: true,
+      message: "deposit cancled",
+      wallet,
+    };
   }
 
+  /**
+   * Cancels a pending withdrawal transaction
+   * Returns funds from pending withdrawal back to available balance
+   *
+   * @param {string} userId - User ID associated with transaction
+   * @param {number} creditedAmount - Amount to be canceled
+   * @param {string} transactionId - Transaction ID to cancel
+   * @returns {Object} - Updated wallet and transaction data
+   */
   async cancleWithdrawal(userId, creditedAmount, transactionId) {
     try {
+      // 1. FIND ADMIN TRANSACTION
       const adminTransaction = await this.AdminTransactionModel.findOne({
         transactionId: transactionId,
       });
@@ -417,25 +542,30 @@ class WalletService {
           `Admin transaction not found with transactionId: ${transactionId}`,
         );
 
+      // 2. DUPLICATE CONFIRMATION CHECK
       if (adminTransaction.isConfirmed === "true")
         throw new Error("Transaction already confirmed");
 
+      // 3. FIND MAIN TRANSACTION
       const transaction = await this.TransactionModel.findById(transactionId);
       if (!transaction) throw new Error("Transaction not found");
 
+      // 4. FIND USER WALLET
       const wallet = await this.WalletModel.findOne({ userId });
       if (!wallet) throw new Error("Wallet not found");
 
+      // 5. TRANSACTION UPDATE - Mark as canceled
       transaction.status = "canceled";
       await transaction.save();
 
-      // 5. Convert amount
+      // 6. AMOUNT CONVERSION
       const creditedAmountInKobo = creditedAmount * 100;
 
-      // Reduce pending withdrawal balance
+      // 7. WALLET UPDATE - Return funds from pending withdrawal to balance
       wallet.pendingWithdraw -= creditedAmountInKobo;
       await wallet.save();
 
+      // 8. ADMIN TRANSACTION UPDATE
       adminTransaction.isConfirmed = "false";
       await adminTransaction.save();
 
@@ -452,4 +582,33 @@ class WalletService {
   }
 }
 
+// ======================
+// MODULE EXPORT
+// ======================
 module.exports = WalletService;
+
+// ======================
+// KEY ARCHITECTURE NOTES:
+// ======================
+// 1. FINANCIAL PRECISION: Uses smallest currency units (kobo/cents) internally
+// 2. TRANSACTION STATES: 'pending', 'completed', 'canceled'
+// 3. BALANCE TYPES:
+//    - balance: Available funds
+//    - pending: Pending deposits
+//    - pendingWithdraw: Pending withdrawals
+// 4. IDENTIFIERS:
+//    - userId: Links to user
+//    - transactionId: Links transactions between collections
+// 5. ERROR HANDLING: Structured error responses with error codes
+// 6. ADMIN CONTROLS: Separate admin transaction model for management
+// 7. AUDIT TRAIL: All actions logged with timestamps and user info
+// 8. CONSISTENCY: Uses MongoDB ObjectId for database operations
+
+// ======================
+// IMPORTANT NOTES:
+// ======================
+// 1. LINE 74: The pending deposit check logic seems inverted (throws error when NO pending found)
+// 2. LINE 134: Pending withdrawal check is commented out - enable if needed
+// 3. LINE 250: Amount conversion seems inconsistent (some methods use *100, some don't)
+// 4. Security: Consider adding transaction logging and audit trails
+// 5. Scalability: Consider adding database transactions for multi-step operations
