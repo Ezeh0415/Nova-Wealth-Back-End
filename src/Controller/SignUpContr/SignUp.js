@@ -58,12 +58,12 @@ class SignUpController {
       // 3️⃣ Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Log reCAPTCHA score if available
-      if (req.recaptchaData) {
-        console.log(
-          `📊 Signup with reCAPTCHA score: ${req.recaptchaData.score}`,
-        );
-      }
+      // // Log reCAPTCHA score if available
+      // if (req.recaptchaData) {
+      //   console.log(
+      //     `📊 Signup with reCAPTCHA score: ${req.recaptchaData.score}`,
+      //   );
+      // }
 
       
       // 4️⃣ Create user
