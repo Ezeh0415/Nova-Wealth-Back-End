@@ -61,6 +61,11 @@ const {
   AdminLoginValidator,
 } = require("../../middlewares/Validators/AdminLoginValidation");
 const verifyRecaptcha = require("../../middlewares/VerifyRecaptcha");
+const {
+  resetPasswordLimiter,
+} = require("../../middlewares/ResetPasswordLimiter");
+const ResetToken = require("../Models/ResetToken");
+const SecurityLog = require("../Models/SecurityLog");
 
 // service bind to schema section
 
@@ -68,7 +73,11 @@ const SignupService = new SignUpService(User);
 const adminSignupService = new AdminSignupService(User);
 const Loginservice = new LoginService(User);
 const adminLoginService = new AdminLoginService(User);
-const forgotPasswordService = new ForgotPasswordService(User);
+const forgotPasswordService = new ForgotPasswordService({
+  userModel: User,
+  ResetToken: ResetToken,
+  SecurityLog: SecurityLog,
+});
 const dashboardService = new DashBoardService({
   WalletModel: WalletSchema,
   TransactionModel: TransactionSchema,
@@ -117,7 +126,7 @@ Router.post(
   "/signup",
   registerValidator,
   validate,
-  verifyRecaptcha,
+  // verifyRecaptcha,
   Require_Api_key,
   SignupController.signUp,
 );
@@ -131,11 +140,10 @@ Router.post(
 
 Router.post(
   "/forgotPassword",
+  resetPasswordLimiter,
   Require_Api_key,
   forgotPasswordController.forgotPassword,
 );
-
-Router.post("/verifyOtp", Require_Api_key, forgotPasswordController.verifyOtp);
 
 Router.post(
   "/resetPassword",

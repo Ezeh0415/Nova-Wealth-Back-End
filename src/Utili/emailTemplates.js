@@ -1,13 +1,13 @@
 // utils/emailTemplates.js
 
-function otpTemplate(otp, appName = "AlthWorld") {
+function otpTemplate(link, appName = "AlthWorld") {
   return `
   <!DOCTYPE html>
   <html>
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${appName} - OTP Verification</title>
+    <title>${appName} - secure password link</title>
     <style>
       body { font-family: Arial, sans-serif; background-color: #f5f7fa; color: #333; }
       .container { max-width: 600px; margin: 20px auto; background-color: #fff; border-radius: 10px; padding: 20px; }
@@ -22,7 +22,7 @@ function otpTemplate(otp, appName = "AlthWorld") {
       <div style="text-align: center;">
         <h2>OTP Verification</h2>
         <p>Your OTP code is:</p>
-        <div class="otp">${otp}</div>
+        <div class="otp">${link}</div>
         <p>This OTP expires in 10 minutes.</p>
         <p>If you did not request this, ignore this email.</p>
       </div>

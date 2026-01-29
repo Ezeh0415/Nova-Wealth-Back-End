@@ -5,7 +5,6 @@ class ForgotPassword {
     // this bind the function to the class
 
     this.forgotPassword = this.forgotPassword.bind(this);
-    this.verifyOtp = this.verifyOtp.bind(this);
     this.resetPassword = this.resetPassword.bind(this);
   }
 
@@ -19,25 +18,18 @@ class ForgotPassword {
     }
   }
 
-  async verifyOtp(req, res) {
-    try {
-      const { email, otp } = req.body;
-      const result = await this.forgotPasswordService.verifyOtp(email, otp);
-      res.status(200).json({ message: result });
-    } catch (error) {
-      res.status(400).json({ error: error.message });
-    }
-  }
+  
 
   async resetPassword(req, res) {
     try {
-      const { email, newPassword } = req.body;
-      if (!newPassword || !email) {
+      const { token, password } = req.body;
+      if (!token || !password) {
         return res.status(400).json({ error: "Password is required" });
       }
+
       const result = await this.forgotPasswordService.resetPassword(
-        email,
-        newPassword
+        token,
+        password
       );
       res.status(200).json({ message: result });
     } catch (error) {
