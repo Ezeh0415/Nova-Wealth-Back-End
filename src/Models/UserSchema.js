@@ -51,6 +51,18 @@ const UserSchema = new mongoose.Schema(
       type: Date,
       default: "",
     },
+    referredBy: {
+      type: String, // Store referral code instead of ObjectId
+      default: null,
+    },
+    referralCode: {
+      type: String,
+      unique: true,
+    },
+    referralLink: {
+      type: String,
+      unique: true,
+    },
   },
   { timestamps: true },
 );

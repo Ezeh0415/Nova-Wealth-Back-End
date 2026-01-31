@@ -13,6 +13,7 @@ const ForgotPasswordController = require("../Controller/ForgotPasswordContr/Forg
 const DashBoardContr = require("../Controller/DashBoardContr/DashBoardContr");
 const InvestmentContr = require("../Controller/InvestmentContr/Investment");
 const CryptoWalletContr = require("../Controller/CryptoWalletContr/CryptoWallet");
+const ReferralContr = require("../Controller/ReferralContr/Referral");
 const AdminDashboardContr = require("../Controller/AdminDashboard/AdminDashboard");
 
 // ======================
@@ -29,6 +30,7 @@ const WalletService = require("../Service/TransactionService/Transaction");
 const InvestmentService = require("../Service/InvestmentService/investment");
 const CryptoWalletService = require("../Service/CryptoWalletService/CryptoWallet");
 const AdminDashboardService = require("../Service/AdminDashboard/AdminDashboard");
+const ReferralService = require("../Service/ReferalLink/ReferalLink");
 
 // ======================
 // MODEL/SCHEMA IMPORTS
@@ -40,6 +42,10 @@ const TransactionSchema = require("../Models/TransactionSchema"); // User transa
 const InvestmentSchema = require("../Models/InvestmentSchema"); // Investments
 const AdminTransactionSchema = require("../Models/AdminTransactionSchema"); // Admin transactions
 const CryptoWalletSchema = require("../Models/CryptoWalletSchema"); // Crypto wallets
+const ResetToken = require("../Models/ResetToken"); // Password reset tokens
+const SecurityLog = require("../Models/SecurityLog"); // Security audit logs
+const Referral = require("../Models/Referral"); // Referrals
+const Notification = require("../Models/Notification"); // Notifications
 
 // ======================
 // MIDDLEWARE IMPORTS
@@ -79,8 +85,6 @@ const verifyRecaptcha = require("../../middlewares/VerifyRecaptcha"); // Google 
 const {
   resetPasswordLimiter,
 } = require("../../middlewares/ResetPasswordLimiter"); // Rate limiting
-const ResetToken = require("../Models/ResetToken"); // Password reset tokens
-const SecurityLog = require("../Models/SecurityLog"); // Security audit logs
 
 // ======================
 // SERVICE INSTANTIATION
@@ -89,16 +93,26 @@ const SecurityLog = require("../Models/SecurityLog"); // Security audit logs
 // Each service handles specific business logic domain
 
 // User authentication services
-const SignupService = new SignUpService(User); // User registration
+const SignupService = new SignUpService({
+  userModel: User,
+  NotificationModel: Notification,
+}); // User registration
 const adminSignupService = new AdminSignupService(User); // Admin registration
 const Loginservice = new LoginService(User); // User login
 const adminLoginService = new AdminLoginService(User); // Admin login
+
+const referralService = new ReferralService({
+  userModel: User,
+  referralModel: Referral,
+  NotificationModel: Notification,
+});
 
 // Forgot password service with multiple dependencies
 const forgotPasswordService = new ForgotPasswordService({
   userModel: User, // User operations
   ResetToken: ResetToken, // Token management
   SecurityLog: SecurityLog, // Security logging
+  NotificationModel: Notification, // Notifications
 });
 
 // Dashboard service with multiple model dependencies
@@ -107,6 +121,7 @@ const dashboardService = new DashBoardService({
   TransactionModel: TransactionSchema, // User transactions
   InvestmentModel: InvestmentSchema, // User investments
   UserModel: User, // User information
+  NotificationModel: Notification, // Notifications
 });
 
 // Payment/transaction service
@@ -115,6 +130,7 @@ const paymentService = new WalletService({
   WalletModel: WalletSchema, // Wallet updates
   TransactionModel: TransactionSchema, // Transaction records
   AdminTransactionModel: AdminTransactionSchema, // Admin transaction records
+  NotificationModel: Notification, // Notifications
 });
 
 // Investment service with all related models
@@ -124,6 +140,7 @@ const investmentService = new InvestmentService({
   InvestmentModel: InvestmentSchema, // Investment records
   WalletModel: WalletSchema, // Wallet updates
   TransactionModel: TransactionSchema, // Transaction records
+  NotificationModel: Notification, // Notifications
 });
 
 // Crypto wallet service
@@ -147,6 +164,7 @@ const SignupController = new SignUpController(SignupService);
 const adminSignupController = new AdminSignupController(adminSignupService);
 const Logincontroller = new LoginController(Loginservice);
 const adminLoginController = new AdminLoginController(adminLoginService);
+const referralController = new ReferralContr(referralService);
 const forgotPasswordController = new ForgotPasswordController(
   forgotPasswordService,
 );
@@ -187,6 +205,8 @@ Router.post(
   Logincontroller.login, // Handle login logic
 );
 
+
+
 // Forgot Password Request
 // Path: POST /api/forgotPassword
 // Middleware chain: rate limit → check API key → process forgot password
@@ -220,6 +240,16 @@ Router.get(
   Require_Api_key, // Validate API key
   Require_jwt_key, // Verify JWT token (user authentication)
   DashBoardController.getDashboard, // Fetch user dashboard data
+);
+
+// User referral link creation
+// Path: POST /api/createReferralLink
+// Middleware chain: check API key → verify JWT → create referral link
+Router.post(
+  "/createReferralLink",
+  Require_jwt_key, // Verify JWT token (user authentication)
+  Require_Api_key, // Validate API key
+  referralController.createReferralLink, // Handle login logic
 );
 
 // Deposit Request

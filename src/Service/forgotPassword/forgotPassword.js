@@ -124,7 +124,7 @@ class forgotPasswordService {
     try {
       await transporter.sendMail({
         from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-        to: email,
+        to: user.email,
         subject: "Your secure password reset link",
         html: otpTemplate(link), // Uses email template with reset button
       });
@@ -183,20 +183,15 @@ class forgotPasswordService {
     try {
       // 1. PASSWORD STRENGTH VALIDATION
       if (!password || password.length < 6) {
-        // BUG: 'res' is not defined in method parameters
         // Should be: throw new Error("Password must be at least 6 characters");
-        return res.status(400).json({
-          error: "Password must be at least 6 characters",
-        });
+        throw new Error("Password must be at least 6 characters");
       }
 
       // Complex password requirements
       if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-        // BUG: 'res' not defined
-        return res.status(400).json({
-          error:
-            "Password must include uppercase, lowercase letters and a number",
-        });
+        throw new Error(
+          "Password must include uppercase, lowercase letters and a number",
+        );
       }
 
       // 2. JWT TOKEN VERIFICATION
@@ -205,10 +200,7 @@ class forgotPasswordService {
       try {
         decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
       } catch (error) {
-        // BUG: 'res' not defined
-        return res.status(400).json({
-          error: "Invalid or expired reset link",
-        });
+        throw new Error("Invalid or expired reset link");
       }
 
       // 3. FIND RESET TOKEN IN DATABASE
@@ -220,10 +212,7 @@ class forgotPasswordService {
       });
 
       if (!resetToken) {
-        // BUG: 'res' not defined
-        return res.status(400).json({
-          error: "Invalid or expired reset link",
-        });
+        throw new Error("Invalid or expired reset link");
       }
 
       // 4. TOKEN VERIFICATION
@@ -231,10 +220,7 @@ class forgotPasswordService {
       const isValid = await bcrypt.compare(decoded.token, resetToken.token);
 
       if (!isValid) {
-        // BUG: 'res' not defined
-        return res.status(400).json({
-          error: "Invalid reset link",
-        });
+        throw new Error("Invalid  reset token");
       }
 
       // 5. FIND USER
@@ -244,10 +230,7 @@ class forgotPasswordService {
       const isSamePassword = await bcrypt.compare(password, user.password);
 
       if (isSamePassword) {
-        // BUG: 'res' not defined
-        return res.status(400).json({
-          error: "New password cannot be the same as old password",
-        });
+        throw new Error("New password cannot be the same as old password");
       }
 
       // 7. HASH NEW PASSWORD
@@ -280,7 +263,7 @@ class forgotPasswordService {
       try {
         await transporter.sendMail({
           from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-          to: email, // BUG: Should be user.email
+          to: user.email, 
           subject: "Password has been reset successfully",
           html: passwordResetSuccessTemplate(user.fullName, user.email),
         });
@@ -289,17 +272,15 @@ class forgotPasswordService {
       }
 
       // 13. SUCCESS RESPONSE
-      // BUG: 'res' not defined
-      res.json({
+      return {
         success: true,
         message: "Password has been reset successfully",
-      });
+      };
     } catch (error) {
       console.error("Reset password error:", error);
       // BUG: 'res' not defined
-      res.status(500).json({
-        error: "An error occurred. Please try again.",
-      });
+
+      throw new Error("An error occurred. Please try again.");
     }
   }
 }

@@ -4,19 +4,19 @@
 // Handles user registration and user existence checking
 // This service encapsulates user creation logic and validation
 class SignUpService {
-  
   /**
    * Constructor - Initializes the service with the User model
    * @param {Model} UserModel - Mongoose User model for database operations
    */
-  constructor(UserModel) {
+  constructor({ UserModel, NotificationModel }) {
     this.UserModel = UserModel; // Store the User model for use in all methods
+    this.NotificationModel = NotificationModel; // Store the Notification model
   }
 
   /**
    * Creates a new user in the database
    * This is the main user registration function
-   * 
+   *
    * @param {Object} user - User object containing registration data
    * @param {string} user.userName - Unique username for the user
    * @param {string} user.email - User's email address
@@ -25,10 +25,10 @@ class SignUpService {
    * @param {string} user.country - User's country
    * @param {string} user.phoneNumber - User's phone number
    * @param {string} user.role - User role (e.g., 'user', 'admin') - optional, defaults in model
-   * 
+   *
    * @returns {Promise<Object>} - The newly created user document
    * @throws {Error} - If database save operation fails (e.g., duplicate key, validation error)
-   * 
+   *
    * Usage Example:
    * const service = new SignUpService(UserModel);
    * const newUser = await service.signUp({
@@ -43,23 +43,38 @@ class SignUpService {
   async signUp(user) {
     // Create a new Mongoose document instance with the provided user data
     const newUser = new this.UserModel(user);
-    
+
     // Save the user document to the MongoDB database
     // This will trigger any Mongoose schema validations and hooks
-    return await newUser.save();
+    await newUser.save();
+
+    const notification = new this.NotificationModel({
+      user: newUser._id,
+      type: "signup",
+      title: "Welcome to Our Platform!",
+      message: `Hello ${newUser.fullName}, thank you for signing up! We're excited to have you on board.`,
+      data: { userId: newUser._id },
+      priority: "low",
+      category: "system",
+      icon:"signup",
+    });
+
+    await notification.save();
+
+    return newUser; // Return the created user document
   }
 
   /**
    * Checks if a user already exists with the given username AND email
    * This is typically used during registration to prevent duplicate accounts
-   * 
+   *
    * @param {string} userName - Username to check
    * @param {string} email - Email address to check
    * @returns {Promise<Object|null>} - Returns the user document if found, null if not found
-   * 
+   *
    * Note: This checks for BOTH username AND email matching simultaneously
    * If you want to check for EITHER username OR email, you would need to modify the query
-   * 
+   *
    * Usage Example:
    * const existingUser = await service.checkUserExist('john_doe', 'john@example.com');
    * if (existingUser) {
@@ -68,22 +83,22 @@ class SignUpService {
    */
   async checkUserExist(userName, email) {
     // Query the database for a user with both matching username AND email
-    return await this.UserModel.findOne({ 
-      userName: userName, 
-      email: email 
+    return await this.UserModel.findOne({
+      userName: userName,
+      email: email,
     });
   }
 
   // ================================================================
   // POTENTIAL ENHANCEMENTS/ADDITIONAL METHODS (NOT IMPLEMENTED YET)
   // ================================================================
-  
+
   // Uncomment and implement these methods if needed:
-  
+
   /**
    * Alternative: Check if EITHER username OR email exists
    * More common use case for registration validation
-   * 
+   *
    * @param {string} userName - Username to check
    * @param {string} email - Email to check
    * @returns {Promise<Object|null>} - First found user with either username or email
@@ -93,10 +108,10 @@ class SignUpService {
   //     $or: [{ userName: userName }, { email: email }]
   //   });
   // }
-  
+
   /**
    * Check if username exists (for username availability check)
-   * 
+   *
    * @param {string} userName - Username to check
    * @returns {Promise<boolean>} - True if username exists, false otherwise
    */
@@ -104,10 +119,10 @@ class SignUpService {
   //   const user = await this.UserModel.findOne({ userName: userName });
   //   return !!user; // Convert to boolean
   // }
-  
+
   /**
    * Check if email exists (for email availability check)
-   * 
+   *
    * @param {string} email - Email to check
    * @returns {Promise<boolean>} - True if email exists, false otherwise
    */
@@ -115,7 +130,6 @@ class SignUpService {
   //   const user = await this.UserModel.findOne({ email: email });
   //   return !!user; // Convert to boolean
   // }
-
 }
 
 // ======================

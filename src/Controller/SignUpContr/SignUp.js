@@ -92,6 +92,10 @@ class SignUpController {
         balance: 0,
       });
 
+      //  notification update
+
+      
+
       // 8️⃣ Return sanitized user
       const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
