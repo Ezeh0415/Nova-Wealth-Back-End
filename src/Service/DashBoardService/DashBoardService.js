@@ -84,7 +84,7 @@ class DashboardService {
 
     // 5. ACCOUNT STATUS - User verification information
     // Fetch minimal user data for account status display
-    const user = await this.UserModel.findById(userId).select("isVerified");
+    const user = await this.UserModel.findById(userId).select("referralLink");
 
     // 6. RETURN AGGREGATED DATA
     // Compile all data into a single dashboard response object

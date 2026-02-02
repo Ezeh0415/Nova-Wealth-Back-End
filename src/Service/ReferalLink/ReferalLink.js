@@ -45,6 +45,7 @@ class ReferralService {
     await notification.save();
 
     return {
+      success: true,
       referralLink,
     };
   }
