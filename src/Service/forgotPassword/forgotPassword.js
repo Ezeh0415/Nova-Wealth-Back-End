@@ -141,7 +141,6 @@ class forgotPasswordService {
     return {
       message: "If an account exists, a reset link has been sent",
       expiresIn: "1 hour", // Token expiration time
-      token: resetToken.token,
     };
   }
 
