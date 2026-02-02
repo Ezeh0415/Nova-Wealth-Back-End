@@ -6,7 +6,7 @@
 // - Validating reset tokens and updating passwords
 // - Security logging and rate limiting
 // Manages the complete password reset flow from request to completion
-const otpGenerate = require("../../Utili/OtpGenerate");
+
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken"); // Note: jwt is used but not imported in original code
 const { otpTemplate } = require("../../Utili/emailTemplates");
@@ -66,9 +66,7 @@ class forgotPasswordService {
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       // BUG: This returns a response object instead of throwing error
       // Should be: throw new Error("Please provide a valid email address");
-      return res.status(400).json({
-        error: "Please provide a valid email address",
-      });
+      throw new Error("Please provide a valid email address");
     }
 
     // 2. USER VERIFICATION
@@ -87,9 +85,7 @@ class forgotPasswordService {
     if (recentResetCount >= 3) {
       // BUG: This returns a response object instead of throwing error
       // Should be: throw new Error("Too many reset requests. Please try again later.");
-      return res.status(429).json({
-        error: "Too many reset requests. Please try again later.",
-      });
+      throw new Error("Too many reset requests. Please try again later.");
     }
 
     // 4. GENERATE RESET TOKEN
@@ -145,6 +141,7 @@ class forgotPasswordService {
     return {
       message: "If an account exists, a reset link has been sent",
       expiresIn: "1 hour", // Token expiration time
+      token: resetToken.token,
     };
   }
 
@@ -186,38 +183,44 @@ class forgotPasswordService {
         // Should be: throw new Error("Password must be at least 6 characters");
         throw new Error("Password must be at least 6 characters");
       }
-
       // Complex password requirements
       if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
         throw new Error(
           "Password must include uppercase, lowercase letters and a number",
         );
       }
-
       // 2. JWT TOKEN VERIFICATION
       // Note: jwt module is used but not imported in original code
       let decoded;
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
+        decoded = await jwt.verify(token, process.env.JWT_SECRET_KEY);
       } catch (error) {
         throw new Error("Invalid or expired reset link");
       }
 
       // 3. FIND RESET TOKEN IN DATABASE
       // Look for valid, unexpired, unused token
-      const resetToken = await this.ResetToken.findOne({
+      const resetToken = await this.ResetToken.find({
         userId: decoded.userId,
-        expires: { $gt: Date.now() },
-        used: false,
-      });
+        // expires: { $gt: Date.now() },
+        used: { $in: ["", "false", null, undefined] },
+      }).sort({ createdAt: -1 });
 
-      if (!resetToken) {
+      let resetTokens = null;
+      for (const token of resetToken) {
+        if (new Date(token.expires).getTime() > Date.now()) {
+          resetTokens = token;
+          break;
+        }
+      }
+
+      if (!resetTokens) {
         throw new Error("Invalid or expired reset link");
       }
 
       // 4. TOKEN VERIFICATION
       // Compare plain token from JWT with hashed token in database
-      const isValid = await bcrypt.compare(decoded.token, resetToken.token);
+      const isValid = await bcrypt.compare(decoded.token, resetTokens.token);
 
       if (!isValid) {
         throw new Error("Invalid  reset token");
@@ -242,9 +245,11 @@ class forgotPasswordService {
       await user.save();
 
       // 9. MARK TOKEN AS USED
-      resetToken.used = true;
-      resetToken.usedAt = Date.now();
-      await resetToken.save();
+      if (resetTokens) {
+        resetTokens.used = true;
+        resetTokens.usedAt = Date.now();
+        await resetTokens.save();
+      }
 
       // 10. INVALIDATE EXISTING SESSIONS (Optional - requires Session model)
       // Note: Session model is not imported or defined in constructor
@@ -263,7 +268,7 @@ class forgotPasswordService {
       try {
         await transporter.sendMail({
           from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-          to: user.email, 
+          to: user.email,
           subject: "Password has been reset successfully",
           html: passwordResetSuccessTemplate(user.fullName, user.email),
         });

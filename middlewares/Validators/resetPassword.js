@@ -2,7 +2,7 @@ const { body } = require("express-validator");
 
 exports.resetPassword = [
   // password
-  body("newPassword")
+  body("password")
     .exists()
     .withMessage("Password is required")
     .isString()
