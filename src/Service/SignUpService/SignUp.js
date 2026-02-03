@@ -122,8 +122,15 @@ class SignUpService {
           referrer.totalReferrals += 1;
           await referrer.save();
 
+          const parsedAmount = 10;
+
+          const conversionRate = 100; // 1 USD = 100 cents
+          const creditedAmountInKobo = Math.round(
+            parsedAmount * conversionRate,
+          );
+
           const wallet = this.WalletModel.findOne({ userId: newUser._id });
-          wallet.balance = 10; // Example bonus amount
+          wallet.balance = creditedAmountInKobo; // Example bonus amount
           await wallet.save();
 
           console.log(`User ${userName} referred by ${referrer.username}`);
