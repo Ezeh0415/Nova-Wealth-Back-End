@@ -5,12 +5,19 @@
 // Provides a consolidated view of user's financial status and activities
 // This service aggregates data from multiple collections for dashboard display
 class DashboardService {
-  constructor({ WalletModel, TransactionModel, InvestmentModel, UserModel }) {
+  constructor({
+    WalletModel,
+    TransactionModel,
+    InvestmentModel,
+    UserModel,
+    NotificationModel,
+  }) {
     // Initialize model dependencies for data retrieval
-    this.WalletModel = WalletModel;           // User wallet/balance information
+    this.WalletModel = WalletModel; // User wallet/balance information
     this.TransactionModel = TransactionModel; // Transaction history
-    this.InvestmentModel = InvestmentModel;   // Investment records
-    this.UserModel = UserModel;               // User account information
+    this.InvestmentModel = InvestmentModel; // Investment records
+    this.UserModel = UserModel; // User account information
+    this.NotificationModel = NotificationModel; // User notifications
   }
 
   // ======================
@@ -20,7 +27,7 @@ class DashboardService {
   /**
    * Retrieves and aggregates all dashboard data for a specific user
    * Fetches data from multiple collections and compiles into a single response
-   * 
+   *
    * @param {string} userId - MongoDB ObjectId of the user
    * @returns {Promise<Object>} - Consolidated dashboard data object containing:
    *   - wallet: User's wallet/balance information
@@ -28,7 +35,7 @@ class DashboardService {
    *   - transactions: Recent transaction history
    *   - profits: Total profit calculated from transactions
    *   - accountStatus: User account verification status
-   * 
+   *
    * Workflow:
    * 1. Fetch user's wallet/balance data
    * 2. Fetch all user investments (sorted by most recent)
@@ -36,16 +43,16 @@ class DashboardService {
    * 4. Calculate total profits from transaction history
    * 5. Fetch user account status (verification status)
    * 6. Return all data in a structured format
-   * 
+   *
    * Performance Considerations:
    * - Multiple database queries (consider optimization for high-traffic)
    * - No pagination on investments (could be large dataset)
    * - Profit calculation done in-memory (could be heavy for many transactions)
-   * 
+   *
    * Usage Example:
    * const dashboardService = new DashboardService(models);
    * const dashboardData = await dashboardService.getDashboard('507f1f77bcf86cd799439011');
-   * 
+   *
    * Returns:
    * {
    *   wallet: { balance: 1500, currency: 'USD', ... },
@@ -72,27 +79,30 @@ class DashboardService {
     // 3. RECENT TRANSACTIONS - Latest 10 transactions
     // Fetch most recent transactions for activity feed
     const transactions = await this.TransactionModel.find({ userId })
-      .sort({ createdAt: -1 })   // Most recent first
-      .limit(10);                // Limit to 10 records for dashboard display
+      .sort({ createdAt: -1 }) // Most recent first
+      .limit(10); // Limit to 10 records for dashboard display
 
     // 4. PROFIT CALCULATION - Sum of all profit transactions
     // Filter transactions to find profit types and sum their amounts
     // Note: Assumes 'profit' is a transaction type and 'amount' field exists
     const profits = transactions
-      .filter((t) => t.type === "profit")    // Only include profit transactions
+      .filter((t) => t.type === "profit") // Only include profit transactions
       .reduce((sum, t) => sum + t.amount, 0); // Sum all profit amounts
 
     // 5. ACCOUNT STATUS - User verification information
     // Fetch minimal user data for account status display
     const user = await this.UserModel.findById(userId).select("referralLink");
 
+    const Notification = await this.NotificationModel.find({ user: userId });
+
     // 6. RETURN AGGREGATED DATA
     // Compile all data into a single dashboard response object
     return {
-      wallet,           // Wallet balance and details
-      investments,      // All investment records
-      transactions,     // Recent transaction history
-      profits,          // Calculated total profits
+      wallet, // Wallet balance and details
+      investments, // All investment records
+      transactions, // Recent transaction history
+      profits, // Calculated total profits
+      Notification,
       accountStatus: user, // User verification status
     };
   }
@@ -100,13 +110,13 @@ class DashboardService {
   // ================================================================
   // POTENTIAL ENHANCEMENTS/ADDITIONAL METHODS (NOT IMPLEMENTED YET)
   // ================================================================
-  
+
   // Uncomment and implement these methods if needed:
 
   /**
    * Get summarized dashboard data (for faster loading)
    * Returns only essential information without full transaction/investment lists
-   * 
+   *
    * @param {string} userId - User ID
    * @returns {Object} - Summarized dashboard stats
    */
@@ -129,7 +139,7 @@ class DashboardService {
   //       .limit(5),
   //     this.UserModel.findById(userId).select('isVerified email fullName')
   //   ]);
-  // 
+  //
   //   return {
   //     balance: wallet?.balance || 0,
   //     activeInvestments: investmentCount,
@@ -141,14 +151,14 @@ class DashboardService {
 
   /**
    * Get financial statistics for charts/graphs
-   * 
+   *
    * @param {string} userId - User ID
    * @param {string} period - Time period ('7d', '30d', '90d', '1y')
    * @returns {Object} - Financial statistics
    */
   // async getFinancialStats(userId, period = '30d') {
   //   const dateFilter = getDateFilter(period); // Helper function to calculate date range
-  //   
+  //
   //   const stats = await this.TransactionModel.aggregate([
   //     {
   //       $match: {
@@ -172,19 +182,19 @@ class DashboardService {
   //     },
   //     { $sort: { _id: 1 } }
   //   ]);
-  //   
+  //
   //   return stats;
   // }
 
   /**
    * Get investment performance metrics
-   * 
+   *
    * @param {string} userId - User ID
    * @returns {Object} - Investment performance data
    */
   // async getInvestmentPerformance(userId) {
   //   const investments = await this.InvestmentModel.find({ userId });
-  //   
+  //
   //   const performance = investments.map(inv => ({
   //     id: inv._id,
   //     type: inv.investmentType,
@@ -195,12 +205,12 @@ class DashboardService {
   //     roiPercentage: ((inv.TotalReturns || 0) / inv.amount) * 100,
   //     status: inv.investmentStatus
   //   }));
-  //   
+  //
   //   const totalReturns = performance.reduce((sum, inv) => sum + inv.returns, 0);
-  //   const averageROI = performance.length > 0 
+  //   const averageROI = performance.length > 0
   //     ? performance.reduce((sum, inv) => sum + inv.roiPercentage, 0) / performance.length
   //     : 0;
-  //   
+  //
   //   return {
   //     investments: performance,
   //     summary: {

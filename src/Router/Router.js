@@ -95,7 +95,9 @@ const {
 // User authentication services
 const SignupService = new SignUpService({
   userModel: User,
+  WalletModel: WalletSchema,
   NotificationModel: Notification,
+  ReferralModel: Referral,
 }); // User registration
 const adminSignupService = new AdminSignupService(User); // Admin registration
 const Loginservice = new LoginService(User); // User login

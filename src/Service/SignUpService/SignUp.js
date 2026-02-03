@@ -2,15 +2,26 @@
 // SIGNUP SERVICE CLASS
 // ======================
 // Handles user registration and user existence checking
+
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../../../middlewares/JWT-Token");
+
 // This service encapsulates user creation logic and validation
 class SignUpService {
   /**
    * Constructor - Initializes the service with the User model
    * @param {Model} UserModel - Mongoose User model for database operations
+   * @param {Model} WalletModel - Mongoose wallet model for database operations
+   * @param {Model} NotificationModel - Mongoose notification model for database operations
+   * @param {Model} ReferralModel - Mongoose referral model for database operations
    */
-  constructor({ UserModel, NotificationModel }) {
+  constructor({ UserModel, WalletModel, NotificationModel, ReferralModel }) {
     this.UserModel = UserModel; // Store the User model for use in all methods
+    this.WalletModel = WalletModel; // Store the Wallet model
     this.NotificationModel = NotificationModel; // Store the Notification model
+    this.ReferralModel = ReferralModel; // Store the Referral model
   }
 
   /**
@@ -40,96 +51,138 @@ class SignUpService {
    *   phoneNumber: '+1234567890'
    * });
    */
-  async signUp(user) {
-    // Create a new Mongoose document instance with the provided user data
-    const newUser = new this.UserModel(user);
+  async signUp(userData) {
+    try {
+      const { fullName, userName, email, password, referralCode } = userData;
 
-    // Save the user document to the MongoDB database
-    // This will trigger any Mongoose schema validations and hooks
-    await newUser.save();
+      // 1️⃣ Validate fields
+      if (!fullName || !userName || !email || !password) {
+        throw new Error("All fields are required");
+      }
 
-    const notification = new this.NotificationModel({
-      user: newUser._id,
-      type: "signup",
-      title: "Welcome to Our Platform!",
-      message: `Hello ${newUser.fullName}, thank you for signing up! We're excited to have you on board.`,
-      data: { userId: newUser._id },
-      priority: "low",
-      category: "system",
-      icon:"signup",
-    });
+      if (fullName.length < 3 || fullName.length > 50) {
+        throw new Error("Full name must be between 3 and 50 characters");
+      }
 
-    await notification.save();
+      if (password.length < 8) {
+        throw new Error("Password must be at least 8 characters");
+      }
 
-    return newUser; // Return the created user document
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error("Invalid email format");
+      }
+
+      // 2️⃣ Check if user exists (case-insensitive)
+      const existingUser = await this.UserModel.findOne({
+        $or: [
+          { username: { $regex: new RegExp(`^${userName}$`, "i") } },
+          { email: { $regex: new RegExp(`^${email}$`, "i") } },
+        ],
+      });
+
+      if (existingUser) {
+        if (existingUser.username.toLowerCase() === userName.toLowerCase()) {
+          throw new Error("Username already exists");
+        }
+        if (existingUser.email.toLowerCase() === email.toLowerCase()) {
+          throw new Error("Email already exists");
+        }
+      }
+
+      // 3️⃣ Create new user object
+      const newUser = new this.UserModel({
+        fullName,
+        username: userName,
+        email: email.toLowerCase(),
+        password,
+      });
+
+      // 4️⃣ Handle referral if code is provided
+      if (referralCode && referralCode.trim() !== "") {
+        const referrer = await this.UserModel.findOne({
+          referralCode: referralCode.trim(),
+        });
+
+        if (referrer) {
+          // Link new user to referrer
+          newUser.referredBy = referrer._id;
+
+          // Create referral record
+          const referral = new this.ReferralModel({
+            referrer: referrer._id,
+            referredUser: newUser._id,
+            referralCodeUsed: referralCode.trim(),
+            status: "pending",
+          });
+          await referral.save();
+
+          // Update referrer's referrals array
+          referrer.referrals.push(newUser._id);
+          referrer.totalReferrals += 1;
+          await referrer.save();
+
+          const wallet = this.WalletModel.findOne({ userId: newUser._id });
+          wallet.balance = 10; // Example bonus amount
+          await wallet.save();
+
+          console.log(`User ${userName} referred by ${referrer.username}`);
+        } else {
+          console.log(`Invalid referral code: ${referralCode}`);
+        }
+      }
+
+      // 5️⃣ Save the new user
+      await newUser.save();
+
+      // 6️⃣ Generate tokens
+      const accessToken = this.generateAccessToken(newUser._id);
+      const refreshToken = this.generateRefreshToken(newUser._id);
+
+      // 7️⃣ Automatically create wallet
+      await this.WalletModel.create({
+        userId: newUser._id,
+        balance: 0,
+        currency: "USD",
+      });
+
+      // 8️⃣ Create welcome notification
+      const notification = new this.NotificationModel({
+        user: newUser._id,
+        type: "WELCOME",
+        title: "Welcome to Our Platform!",
+        message: `Hello ${newUser.fullName}, thank you for signing up! We're excited to have you on board.`,
+        data: { userId: newUser._id },
+        priority: "success",
+        category: "account",
+        icon: "party-popper",
+      });
+      await notification.save();
+
+      // 9️⃣ Return sanitized user data
+      const safeUser = {
+        id: newUser._id,
+        fullName: newUser.fullName,
+        username: newUser.username,
+        email: newUser.email,
+        referralCode: newUser.referralCode,
+        referredBy: newUser.referredBy,
+        createdAt: newUser.createdAt,
+        isVerified: newUser.isVerified,
+      };
+
+      return {
+        success: true,
+        message: "User created successfully",
+        data: safeUser,
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      console.error("Signup error:", error);
+      throw error;
+    }
   }
-
-  /**
-   * Checks if a user already exists with the given username AND email
-   * This is typically used during registration to prevent duplicate accounts
-   *
-   * @param {string} userName - Username to check
-   * @param {string} email - Email address to check
-   * @returns {Promise<Object|null>} - Returns the user document if found, null if not found
-   *
-   * Note: This checks for BOTH username AND email matching simultaneously
-   * If you want to check for EITHER username OR email, you would need to modify the query
-   *
-   * Usage Example:
-   * const existingUser = await service.checkUserExist('john_doe', 'john@example.com');
-   * if (existingUser) {
-   *   throw new Error('User already exists');
-   * }
-   */
-  async checkUserExist(userName, email) {
-    // Query the database for a user with both matching username AND email
-    return await this.UserModel.findOne({
-      userName: userName,
-      email: email,
-    });
-  }
-
-  // ================================================================
-  // POTENTIAL ENHANCEMENTS/ADDITIONAL METHODS (NOT IMPLEMENTED YET)
-  // ================================================================
-
-  // Uncomment and implement these methods if needed:
-
-  /**
-   * Alternative: Check if EITHER username OR email exists
-   * More common use case for registration validation
-   *
-   * @param {string} userName - Username to check
-   * @param {string} email - Email to check
-   * @returns {Promise<Object|null>} - First found user with either username or email
-   */
-  // async checkUserExistByUsernameOrEmail(userName, email) {
-  //   return await this.UserModel.findOne({
-  //     $or: [{ userName: userName }, { email: email }]
-  //   });
-  // }
-
-  /**
-   * Check if username exists (for username availability check)
-   *
-   * @param {string} userName - Username to check
-   * @returns {Promise<boolean>} - True if username exists, false otherwise
-   */
-  // async isUsernameTaken(userName) {
-  //   const user = await this.UserModel.findOne({ userName: userName });
-  //   return !!user; // Convert to boolean
-  // }
-
-  /**
-   * Check if email exists (for email availability check)
-   *
-   * @param {string} email - Email to check
-   * @returns {Promise<boolean>} - True if email exists, false otherwise
-   */
-  // async isEmailTaken(email) {
-  //   const user = await this.UserModel.findOne({ email: email });
-  //   return !!user; // Convert to boolean
-  // }
 }
 
 // ======================

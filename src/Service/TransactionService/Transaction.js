@@ -11,12 +11,14 @@ class WalletService {
     WalletModel,
     TransactionModel,
     AdminTransactionModel,
+    NotificationModel,
   }) {
     // Initialize model dependencies
     this.userModel = userModel; // User collection model
     this.WalletModel = WalletModel; // Wallet collection model
     this.TransactionModel = TransactionModel; // User transactions model
     this.AdminTransactionModel = AdminTransactionModel; // Admin transactions model
+    this.NotificationModel = NotificationModel; // Notification model
   }
 
   // ======================
@@ -129,6 +131,21 @@ class WalletService {
         status: "pending",
         transactionId: transaction._id, // Reference to user transaction
       });
+
+      // 9. Notification (optional) - Notify user of deposit request
+      const notification = new this.NotificationModel({
+        user: userObjectId,
+        type: "deposit",
+        title: "Deposit Request Received",
+        message: `Hello ${user.fullName}, your deposit request of ${parsedAmount} ${currency.toUpperCase()} has been received and is pending approval.`,
+        data: { amount: parsedAmount, currency: currency.toUpperCase() },
+        priority: "medium",
+        category: "finance",
+        actionUrl: `${process.env.FRONTEND_URL}/wallet`,
+        icon: "deposit",
+      });
+
+      await notification.save();
 
       return {
         success: true,
@@ -255,6 +272,21 @@ class WalletService {
         walletAddress: walletAddress,
         transactionId: transaction._id,
       });
+
+      // 7. Notification (optional) - Notify user of withdrawal request
+      const notification = new this.NotificationModel({
+        user: userObjectId,
+        type: "withdrawal",
+        title: "Withdrawal Request Received",
+        message: `Hello ${user.fullName}, your withdrawal request of ${parsedAmount} ${currency.toUpperCase()} has been received and is pending approval.`,
+        data: { amount: parsedAmount, currency: currency.toUpperCase() },
+        priority: "medium",
+        category: "finance",
+        actionUrl: `${process.env.FRONTEND_URL}/wallet`,
+        icon: "withdrawal",
+      });
+
+      await notification.save();
 
       return {
         success: true,

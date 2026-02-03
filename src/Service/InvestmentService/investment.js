@@ -17,11 +17,11 @@ class InvestmentService {
     TransactionModel,
   }) {
     // Initialize all model dependencies
-    this.userModels = userModels;                // User collection model
+    this.userModels = userModels; // User collection model
     this.AdminTransactionModel = AdminTransactionModel; // Admin transaction records
-    this.InvestmentModel = InvestmentModel;      // Investment records
-    this.WalletModel = WalletModel;              // User wallet management
-    this.TransactionModel = TransactionModel;    // Transaction history
+    this.InvestmentModel = InvestmentModel; // Investment records
+    this.WalletModel = WalletModel; // User wallet management
+    this.TransactionModel = TransactionModel; // Transaction history
   }
 
   // ======================
@@ -31,7 +31,7 @@ class InvestmentService {
   /**
    * Creates a new investment for a user
    * Deducts funds from wallet and sets up investment tracking
-   * 
+   *
    * @param {string} userId - ID of the user making the investment
    * @param {number} amount - Investment amount in base currency (e.g., dollars)
    * @param {number} roi - Return on Investment percentage (e.g., 5 for 5%)
@@ -40,7 +40,7 @@ class InvestmentService {
    * @param {string|Date} investmentEndDate - When the investment matures
    * @returns {Object} - Success response with investment details and updated wallet
    * @throws {Error} - If validation fails, insufficient funds, or user/wallet not found
-   * 
+   *
    * Workflow:
    * 1. Validate all input parameters
    * 2. Convert userId to ObjectId and find user
@@ -49,7 +49,7 @@ class InvestmentService {
    * 5. Deduct amount from wallet balance
    * 6. Create investment record
    * 7. Create transaction records (user and admin)
-   * 
+   *
    * Note: Uses kobo/cents internally (100 units = 1 currency unit) for financial precision
    */
   async invest(
@@ -145,7 +145,21 @@ class InvestmentService {
 
       await adminTransaction.save();
 
-      // 10. SUCCESS RESPONSE - Return formatted investment details
+      // 10.Notification can be added here if needed
+      const notification = new this.NotificationModel({
+        user: userObjectId,
+        type: "investment",
+        title: "Investment Created Successfully",
+        message: `Your investment of $${amount} in the ${investmentType} plan has been created successfully.`,
+        data: { investmentId: investment._id },
+        priority: "success",
+        category: "investment",
+        icon: "investment",
+      });
+
+      await notification.save();
+
+      // 11. SUCCESS RESPONSE - Return formatted investment details
       return {
         success: true,
         message: "Investment created successfully",
@@ -175,7 +189,7 @@ class InvestmentService {
   /**
    * Processes daily Return on Investment for all active investments
    * This is typically called by a cron job every 24 hours
-   * 
+   *
    * Workflow:
    * 1. Defines daily interval (24 hours)
    * 2. Sets ROI rates for different investment plans
@@ -187,7 +201,7 @@ class InvestmentService {
    *    - Updates investment returns
    *    - Credits profit to investment balance
    *    - Creates transaction record
-   * 
+   *
    * Important: Prevents double-crediting by checking lastRoiAt timestamp
    */
   async processDailyROI() {
@@ -196,10 +210,10 @@ class InvestmentService {
 
     // ROI rates for different investment plans (2%, 4%, 6%, 8% daily)
     const PLAN_RATES = {
-      basic: 0.02,     // 2% daily ROI
-      standard: 0.04,  // 4% daily ROI
-      premium: 0.06,   // 6% daily ROI
-      ultimate: 0.08,  // 8% daily ROI
+      basic: 0.02, // 2% daily ROI
+      standard: 0.04, // 4% daily ROI
+      premium: 0.06, // 6% daily ROI
+      ultimate: 0.08, // 8% daily ROI
     };
 
     const now = new Date(); // Current timestamp for processing
@@ -265,11 +279,11 @@ class InvestmentService {
   /**
    * Completes an investment when it reaches maturity
    * Returns capital + accumulated ROI to user's main balance
-   * 
+   *
    * @param {string} investmentId - ID of the investment to complete
    * @returns {Object} - The completed investment document
    * @throws {Error} - If investment or wallet not found
-   * 
+   *
    * Workflow:
    * 1. Find the investment
    * 2. Verify it's still active
@@ -325,6 +339,19 @@ class InvestmentService {
       transaction.status = "completed";
       await transaction.save();
     }
+
+    const notification = new this.NotificationModel({
+      user: investment.userId,
+      type: "investment",
+      title: "Investment Completed",
+      message: `Your investment in the ${investment.investmentType} plan has completed. Your capital and returns have been credited to your wallet.`,
+      data: { investmentId: investment._id },
+      priority: "success",
+      category: "investment",
+      icon: "investment",
+    });
+
+    await notification.save();
 
     return investment; // Return completed investment for reference
   }
