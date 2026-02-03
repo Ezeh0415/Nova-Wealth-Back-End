@@ -13,6 +13,8 @@ const notificationSchema = new mongoose.Schema(
       type: String,
       enum: [
         "referral", // Referral related
+        "transaction", // Transaction related
+        "success", // Successful operations
         "deposit", // Deposit related
         "withdrawal", // Withdrawal related
         "investment", // Investment updates
@@ -53,7 +55,21 @@ const notificationSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["transaction", "account", "marketing", "system", "referral"],
+      enum: [
+        "referral", // Referral related
+        "transaction", // Transaction related
+        "success", // Successful operations
+        "deposit", // Deposit related
+        "withdrawal", // Withdrawal related
+        "investment", // Investment updates
+        "withdrawal_request", // Withdrawal request status
+        "bonus", // Bonus earned
+        "system", // System announcements
+        "security", // Security alerts
+        "promotion", // Promotions
+        "account", // Account updates
+        "signup", // Signup confirmation
+      ],
       default: "system",
     },
     actionUrl: {
