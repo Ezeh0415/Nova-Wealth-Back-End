@@ -15,6 +15,7 @@ const InvestmentContr = require("../Controller/InvestmentContr/Investment");
 const CryptoWalletContr = require("../Controller/CryptoWalletContr/CryptoWallet");
 const ReferralContr = require("../Controller/ReferralContr/Referral");
 const AdminDashboardContr = require("../Controller/AdminDashboard/AdminDashboard");
+const MarkNotificationAsReadContr = require("../Controller/markNotificationAsRead/markNotificationAsReadContr");
 
 // ======================
 // SERVICE IMPORTS
@@ -31,6 +32,7 @@ const InvestmentService = require("../Service/InvestmentService/investment");
 const CryptoWalletService = require("../Service/CryptoWalletService/CryptoWallet");
 const AdminDashboardService = require("../Service/AdminDashboard/AdminDashboard");
 const ReferralService = require("../Service/ReferalLink/ReferalLink");
+const MarkNotificationAsReadService = require("../Service/markNotificationAsRead/markNotificationAsReadService");
 
 // ======================
 // MODEL/SCHEMA IMPORTS
@@ -156,6 +158,10 @@ const dashboardAdminService = new AdminDashboardService({
   UserModel: User, // All users
 });
 
+const markNotificationAsReadService = new MarkNotificationAsReadService(
+  Notification,
+);
+
 // ======================
 // CONTROLLER INSTANTIATION
 // ======================
@@ -175,6 +181,9 @@ const payment = new Payment(paymentService);
 const investmentController = new InvestmentContr(investmentService);
 const cryptoWalletController = new CryptoWalletContr(cryptoWalletService);
 const DashBoardAdminController = new AdminDashboardContr(dashboardAdminService);
+const markNotificationAsReadController = new MarkNotificationAsReadContr(
+  markNotificationAsReadService,
+);
 
 // ======================
 // ROUTE DEFINITIONS
@@ -206,8 +215,6 @@ Router.post(
   Require_Api_key, // Validate API key
   Logincontroller.login, // Handle login logic
 );
-
-
 
 // Forgot Password Request
 // Path: POST /api/forgotPassword
@@ -286,6 +293,13 @@ Router.post(
   validate, // Run validation middleware
   Require_jwt_key, // Verify JWT token
   investmentController.invest, // Process investment
+);
+
+Router.post(
+  "/markNotificationAsRead",
+  Require_Api_key, // Validate API key
+  Require_jwt_key, // Verify JWT token
+  markNotificationAsReadController.execute, // Mark notification as read
 );
 
 // ======================
