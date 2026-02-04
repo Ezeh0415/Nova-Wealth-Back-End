@@ -1,229 +1,157 @@
-// ======================
-// SIGNUP SERVICE CLASS
-// ======================
-// Handles user registration and user existence checking
-
-const {
-  generateAccessToken,
-  generateRefreshToken,
-} = require("../../../middlewares/JWT-Token");
-
-// This service encapsulates user creation logic and validation
 class SignUpService {
-  /**
-   * Constructor - Initializes the service with the User model
-   * @param {Model} UserModel - Mongoose User model for database operations
-   * @param {Model} WalletModel - Mongoose wallet model for database operations
-   * @param {Model} NotificationModel - Mongoose notification model for database operations
-   * @param {Model} ReferralModel - Mongoose referral model for database operations
-   */
   constructor({ UserModel, WalletModel, NotificationModel, ReferralModel }) {
-    this.UserModel = UserModel; // Store the User model for use in all methods
-    this.WalletModel = WalletModel; // Store the Wallet model
-    this.NotificationModel = NotificationModel; // Store the Notification model
-    this.ReferralModel = ReferralModel; // Store the Referral model
+    this.UserModel = UserModel;
+    this.WalletModel = WalletModel;
+    this.NotificationModel = NotificationModel;
+    this.ReferralModel = ReferralModel;
   }
 
-  /**
-   * Creates a new user in the database
-   * This is the main user registration function
-   *
-   * @param {Object} user - User object containing registration data
-   * @param {string} user.userName - Unique username for the user
-   * @param {string} user.email - User's email address
-   * @param {string} user.password - Hashed password (hashing should be done before calling this)
-   * @param {string} user.fullName - User's full name
-   * @param {string} user.country - User's country
-   * @param {string} user.phoneNumber - User's phone number
-   * @param {string} user.role - User role (e.g., 'user', 'admin') - optional, defaults in model
-   *
-   * @returns {Promise<Object>} - The newly created user document
-   * @throws {Error} - If database save operation fails (e.g., duplicate key, validation error)
-   *
-   * Usage Example:
-   * const service = new SignUpService(UserModel);
-   * const newUser = await service.signUp({
-   *   userName: 'john_doe',
-   *   email: 'john@example.com',
-   *   password: 'hashedPassword123',
-   *   fullName: 'John Doe',
-   *   country: 'USA',
-   *   phoneNumber: '+1234567890'
-   * });
-   */
+
+
   async signUp(userData) {
+    const session = await this.UserModel.startSession();
+
     try {
-      const { fullName, userName, email, password, referralCode } = userData;
-
-      // 1️⃣ Validate fields
-      if (!fullName || !userName || !email || !password) {
-        throw new Error("All fields are required");
-      }
-
-      if (fullName.length < 3 || fullName.length > 50) {
-        throw new Error("Full name must be between 3 and 50 characters");
-      }
-
-      if (password.length < 8) {
-        throw new Error("Password must be at least 8 characters");
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        throw new Error("Invalid email format");
-      }
-
-      // 2️⃣ Check if user exists (case-insensitive)
-      const existingUser = await this.UserModel.findOne({
-        $or: [
-          { username: { $regex: new RegExp(`^${userName}$`, "i") } },
-          { email: { $regex: new RegExp(`^${email}$`, "i") } },
-        ],
-      });
-
-      if (existingUser) {
-        if (existingUser.username.toLowerCase() === userName.toLowerCase()) {
-          throw new Error("Username already exists");
+      return await session.withTransaction(async () => {
+        const { fullName, userName, email, password, referralCode } = userData;
+        
+        console.log("1️⃣ Validate fields")
+        // 1️⃣ Validate fields
+        if (!fullName || !userName || !email || !password) {
+          throw new Error("All fields are required");
         }
-        if (existingUser.email.toLowerCase() === email.toLowerCase()) {
+        console.log("2️⃣ Check if user exists (in transaction)")
+        // 2️⃣ Check if user exists (in transaction)
+        const existingUser = await this.UserModel.findOne({
+          $or: [
+            { userName: { $regex: new RegExp(`^${userName}$`, "i") } },
+            { email: { $regex: new RegExp(`^${email}$`, "i") } },
+          ],
+        }).session(session);
+
+        if (existingUser) {
+          if (existingUser.userName.toLowerCase() === userName.toLowerCase()) {
+            throw new Error("Username already exists");
+          }
           throw new Error("Email already exists");
         }
-      }
 
-      // 3️⃣ Create new user object
-      const newUser = new this.UserModel({
-        fullName,
-        username: userName,
-        email: email.toLowerCase(),
-        password,
-      });
+        console.log(" Check if user exists (in transaction)")
+        const referrerUserCode = await this.UserModel.findOne({
+          referralCode: referralCode, // Exact match, case-sensitive
+        }).session(session);
 
-      // 4️⃣ Handle referral if code is provided
-      if (referralCode && referralCode.trim() !== "") {
-        const referrer = await this.UserModel.findOne({
-          referralCode: referralCode.trim(),
+        if (!referrerUserCode) {
+          throw new Error("Invalid referral code");
+        }
+
+        console.log("3️⃣ Create new user")
+
+        // 3️⃣ Create new user
+        const newUser = new this.UserModel({
+          fullName,
+          userName: userName,
+          email: email.toLowerCase(),
+          password,
         });
 
-        if (referrer) {
-          // Link new user to referrer
-          newUser.referredBy = referrer._id;
+        console.log("4️⃣ Save user first to get _id")
 
-          // Create referral record
-          const referral = new this.ReferralModel({
-            referrer: referrer._id,
-            referredUser: newUser._id,
-            referralCodeUsed: referralCode.trim(),
-            status: "pending",
-          });
-          await referral.save();
+        // 4️⃣ Save user first to get _id
+        await newUser.save({ session });
 
-          // Update referrer's referrals array
-          referrer.referrals.push(newUser._id);
-          referrer.totalReferrals += 1;
-          await referrer.save();
+        let referralBonus = 0;
 
-          const parsedAmount = 10;
+        console.log("5️⃣ Handle referral if valid code")
+        // 5️⃣ Handle referral if valid code
+        if (referralCode && referralCode.trim() !== "") {
+          const referrer = await this.UserModel.findOne({
+            referralCode: referralCode.trim(),
+          }).session(session);
 
-          const conversionRate = 100; // 1 USD = 100 cents
-          const creditedAmountInKobo = Math.round(
-            parsedAmount * conversionRate,
-          );
+          if (referrer) {
+            // Update user with referrer
+            newUser.referredBy = referrer._id;
+            await newUser.save({ session });
 
-          const wallet = this.WalletModel.findOne({ userId: newUser._id });
-          wallet.balance = creditedAmountInKobo; // Example bonus amount
-          await wallet.save();
+            // Create referral record
+            const referral = new this.ReferralModel({
+              referrer: referrer._id,
+              referredUser: newUser._id,
+              referralCodeUsed: referralCode.trim(),
+              status: "pending",
+            });
+            await referral.save({ session });
 
-          console.log(`User ${userName} referred by ${referrer.username}`);
-        } else {
-          console.log(`Invalid referral code: ${referralCode}`);
+            // Update referrer
+            referrer.referrals.push(newUser._id);
+            referrer.totalReferrals += 1;
+            await referrer.save({ session });
+
+            // Set referral bonus
+            referralBonus = 1000; // 10 USD in cents/kobo
+          }
+          // If invalid code, just ignore (don't throw error)
         }
-      }
 
-      // 5️⃣ Save the new user
-      await newUser.save();
+        console.log("6️⃣ Create wallet (with or without bonus)")
+        // 6️⃣ Create wallet (with or without bonus)
+        await this.WalletModel.create(
+          [
+            {
+              userId: newUser._id,
+              balance: 0,
+              currency: "USD",
+            },
+          ],
+          { session },
+        );
 
-      // 6️⃣ Generate tokens
-      const accessToken = this.generateAccessToken(newUser._id);
-      const refreshToken = this.generateRefreshToken(newUser._id);
+        await this.WalletModel.updateOne(
+          { userId: referrerUserCode._id },
+          { $inc: { balance: referralBonus } },
+          { session }, // Add session if in transaction
+        );
 
-      // 7️⃣ Automatically create wallet
-      await this.WalletModel.create({
-        userId: newUser._id,
-        balance: 0,
-        currency: "USD",
+        console.log("7️⃣ Create welcome notification")
+        // 7️⃣ Create welcome notification
+        const notification = new this.NotificationModel({
+          user: newUser._id,
+          type: "WELCOME",
+          title: "Welcome to Our Platform!",
+          message: `Hello ${newUser.fullName}, thank you for signing up!`,
+          priority: "low",
+          category: "account",
+          type: "signup",
+          category: "signup",
+        });
+        await notification.save({ session });
+
+        console.log(" 8️⃣ Generate tokens")
+        // 8️⃣ Generate tokens
+      
+
+        console.log(" 9️⃣ Return sanitized data")
+        // 9️⃣ Return sanitized data
+        return {
+          
+            id: newUser._id,
+            fullName: newUser.fullName,
+            username: newUser.username,
+            email: newUser.email,
+            referralCode: newUser.referralCode,
+            referredBy: newUser.referredBy,
+            createdAt: newUser.createdAt,
+          
+        };
       });
-
-      // 8️⃣ Create welcome notification
-      const notification = new this.NotificationModel({
-        user: newUser._id,
-        type: "WELCOME",
-        title: "Welcome to Our Platform!",
-        message: `Hello ${newUser.fullName}, thank you for signing up! We're excited to have you on board.`,
-        data: { userId: newUser._id },
-        priority: "success",
-        category: "account",
-        icon: "party-popper",
-      });
-      await notification.save();
-
-      // 9️⃣ Return sanitized user data
-      const safeUser = {
-        id: newUser._id,
-        fullName: newUser.fullName,
-        username: newUser.username,
-        email: newUser.email,
-        referralCode: newUser.referralCode,
-        referredBy: newUser.referredBy,
-        createdAt: newUser.createdAt,
-        isVerified: newUser.isVerified,
-      };
-
-      return {
-        success: true,
-        message: "User created successfully",
-        data: safeUser,
-        accessToken,
-        refreshToken,
-      };
     } catch (error) {
       console.error("Signup error:", error);
       throw error;
+    } finally {
+      session.endSession();
     }
   }
 }
 
-// ======================
-// MODULE EXPORT
-// ======================
 module.exports = SignUpService;
-
-// ======================
-// KEY POINTS:
-// ======================
-// 1. RESPONSIBILITY: Handles user creation and existence checking only
-// 2. SEPARATION OF CONCERNS: Does NOT handle:
-//    - Password hashing (should be done in controller before calling signUp)
-//    - Input validation (should be done in middleware)
-//    - Email sending (should be done in separate email service)
-// 3. DEPENDENCY INJECTION: UserModel is injected for testability
-// 4. SIMPLICITY: Currently minimal - can be extended with more methods
-// 5. DATABASE: Direct MongoDB operations through Mongoose
-
-// ======================
-// TYPICAL USAGE FLOW:
-// ======================
-// 1. Controller receives registration request
-// 2. Middleware validates input (username format, email validity, etc.)
-// 3. Controller hashes password
-// 4. Controller calls checkUserExist() to prevent duplicates
-// 5. Controller calls signUp() with user data
-// 6. Controller sends appropriate response based on result
-
-// ======================
-// IMPORTANT NOTES:
-// ======================
-// 1. The current checkUserExist() method looks for EXACT username AND email match
-//    This might not be the most common use case - consider modifying if needed
-// 2. No error handling within the methods - errors bubble up to the controller
-// 3. Consider adding more validation here if business logic gets complex
-// 4. Could add methods for updating user info, deleting users, etc.

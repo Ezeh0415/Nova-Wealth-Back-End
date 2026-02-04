@@ -140,7 +140,7 @@ class WalletService {
         message: `Hello ${user.fullName}, your deposit request of ${parsedAmount} ${currency.toUpperCase()} has been received and is pending approval.`,
         data: { amount: parsedAmount, currency: currency.toUpperCase() },
         priority: "medium",
-        category: "finance",
+        category: "deposit",
         actionUrl: `${process.env.FRONTEND_URL}/wallet`,
         icon: "deposit",
       });
@@ -281,7 +281,7 @@ class WalletService {
         message: `Hello ${user.fullName}, your withdrawal request of ${parsedAmount} ${currency.toUpperCase()} has been received and is pending approval.`,
         data: { amount: parsedAmount, currency: currency.toUpperCase() },
         priority: "medium",
-        category: "finance",
+        category: "withdrawal",
         actionUrl: `${process.env.FRONTEND_URL}/wallet`,
         icon: "withdrawal",
       });

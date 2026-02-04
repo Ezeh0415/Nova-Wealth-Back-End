@@ -93,7 +93,9 @@ class DashboardService {
     // Fetch minimal user data for account status display
     const user = await this.UserModel.findById(userId).select("referralLink");
 
-    const Notification = await this.NotificationModel.find({ user: userId });
+    const Notification = await this.NotificationModel.find({
+      user: userId,
+    }).sort({ createdAt: -1 });
 
     // 6. RETURN AGGREGATED DATA
     // Compile all data into a single dashboard response object

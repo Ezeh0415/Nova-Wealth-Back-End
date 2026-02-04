@@ -15,7 +15,7 @@ const InvestmentContr = require("../Controller/InvestmentContr/Investment");
 const CryptoWalletContr = require("../Controller/CryptoWalletContr/CryptoWallet");
 const ReferralContr = require("../Controller/ReferralContr/Referral");
 const AdminDashboardContr = require("../Controller/AdminDashboard/AdminDashboard");
-const MarkNotificationAsReadContr = require("../Controller/markNotificationAsRead/markNotificationAsReadContr");
+const MarkNotificationUpdate = require("../Controller/MarkNotificationUpdateContr/MarkNotificationUpdate");
 
 // ======================
 // SERVICE IMPORTS
@@ -32,7 +32,7 @@ const InvestmentService = require("../Service/InvestmentService/investment");
 const CryptoWalletService = require("../Service/CryptoWalletService/CryptoWallet");
 const AdminDashboardService = require("../Service/AdminDashboard/AdminDashboard");
 const ReferralService = require("../Service/ReferalLink/ReferalLink");
-const MarkNotificationAsReadService = require("../Service/markNotificationAsRead/markNotificationAsReadService");
+const  ReadNotification = require("../Service/ReadNotificarion/ReadNotification");
 
 // ======================
 // MODEL/SCHEMA IMPORTS
@@ -96,7 +96,7 @@ const {
 
 // User authentication services
 const SignupService = new SignUpService({
-  userModel: User,
+  UserModel: User,
   WalletModel: WalletSchema,
   NotificationModel: Notification,
   ReferralModel: Referral,
@@ -104,6 +104,7 @@ const SignupService = new SignUpService({
 const adminSignupService = new AdminSignupService(User); // Admin registration
 const Loginservice = new LoginService(User); // User login
 const adminLoginService = new AdminLoginService(User); // Admin login
+
 
 const referralService = new ReferralService({
   userModel: User,
@@ -158,9 +159,9 @@ const dashboardAdminService = new AdminDashboardService({
   UserModel: User, // All users
 });
 
-const markNotificationAsReadService = new MarkNotificationAsReadService(
-  Notification,
-);
+const readNotification = new ReadNotification(Notification)
+
+
 
 // ======================
 // CONTROLLER INSTANTIATION
@@ -181,10 +182,11 @@ const payment = new Payment(paymentService);
 const investmentController = new InvestmentContr(investmentService);
 const cryptoWalletController = new CryptoWalletContr(cryptoWalletService);
 const DashBoardAdminController = new AdminDashboardContr(dashboardAdminService);
-const markNotificationAsReadController = new MarkNotificationAsReadContr(
-  markNotificationAsReadService,
-);
+const  markNotificationUpdate = new MarkNotificationUpdate(readNotification);
 
+
+// const MarkAsRead = require("../Controller/MarkAsReadContr/MarkAsReadContr");
+// const MarkNotificationAsReadService = require("../Service/markNotificationAsRead/markNotificationAsReadService");
 // ======================
 // ROUTE DEFINITIONS
 // ======================
@@ -197,10 +199,7 @@ const markNotificationAsReadController = new MarkNotificationAsReadContr(
 // Path: POST /api/signup
 // Middleware chain: validate registration data → check API key → process signup
 Router.post(
-  "/signup",
-  registerValidator, // Validate request body against registration schema
-  validate, // Run validation middleware
-  // verifyRecaptcha,    // (Commented out) Google reCAPTCHA verification
+  "/signup",   
   Require_Api_key, // Validate API key in request
   SignupController.signUp, // Handle signup logic
 );
@@ -295,11 +294,18 @@ Router.post(
   investmentController.invest, // Process investment
 );
 
-Router.post(
+Router.put(
   "/markNotificationAsRead",
   Require_Api_key, // Validate API key
-  Require_jwt_key, // Verify JWT token
-  markNotificationAsReadController.execute, // Mark notification as read
+  // Require_jwt_key, // Verify JWT token
+ markNotificationUpdate.UpdateSingleNotification// Mark notification as read
+);
+
+Router.put(
+  "/markAllNotificationAsRead",
+  Require_Api_key, // Validate API key
+  // Require_jwt_key, // Verify JWT token
+ markNotificationUpdate.UpdateAllNotifications// Mark notification as read
 );
 
 // ======================

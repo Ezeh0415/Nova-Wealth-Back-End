@@ -153,7 +153,6 @@ class InvestmentService {
         message: `Your investment of $${amount} in the ${investmentType} plan has been created successfully.`,
         data: { investmentId: investment._id },
         actionUrl: `${process.env.FRONTEND_URL}/investments`,
-        priority: "success",
         category: "investment",
         icon: "investment",
       });
@@ -347,7 +346,6 @@ class InvestmentService {
       title: "Investment Completed",
       message: `Your investment in the ${investment.investmentType} plan has completed. Your capital and returns have been credited to your wallet.`,
       data: { investmentId: investment._id },
-      priority: "success",
       category: "investment",
       icon: "investment",
     });

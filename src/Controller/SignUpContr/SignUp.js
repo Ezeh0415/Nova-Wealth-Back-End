@@ -1,5 +1,4 @@
 const bcrypt = require("bcryptjs");
-const WalletModel = require("../../Models/WalletSchema");
 const {
   generateAccessToken,
   generateRefreshToken,
@@ -15,8 +14,6 @@ class SignUpController {
   async signUp(req, res) {
     try {
       const { fullName, userName, email, password, referral } = req.body;
-
-
 
       // 3️⃣ Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -37,7 +34,16 @@ class SignUpController {
         referral,
       });
 
+      const accessToken = await generateAccessToken(user._id);
+      const refreshToken = await generateRefreshToken(user._id);
 
+      res.status(201).json({
+        success: true,
+        message: "User created successfully",
+        user,
+        accessToken,
+        refreshToken,
+      });
     } catch (err) {
       console.error("SignUpController Error:", err);
       return res.status(500).json({ message: "Server error" });
