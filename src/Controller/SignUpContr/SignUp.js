@@ -46,7 +46,7 @@ class SignUpController {
       });
     } catch (err) {
       console.error("SignUpController Error:", err);
-      return res.status(500).json({ message: "Server error" });
+      return res.status(500).json({ message: err.message });
     }
   }
 }

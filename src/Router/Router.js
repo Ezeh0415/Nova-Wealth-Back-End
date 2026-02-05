@@ -32,7 +32,7 @@ const InvestmentService = require("../Service/InvestmentService/investment");
 const CryptoWalletService = require("../Service/CryptoWalletService/CryptoWallet");
 const AdminDashboardService = require("../Service/AdminDashboard/AdminDashboard");
 const ReferralService = require("../Service/ReferalLink/ReferalLink");
-const  ReadNotification = require("../Service/ReadNotificarion/ReadNotification");
+const ReadNotification = require("../Service/ReadNotificarion/ReadNotification");
 
 // ======================
 // MODEL/SCHEMA IMPORTS
@@ -100,11 +100,11 @@ const SignupService = new SignUpService({
   WalletModel: WalletSchema,
   NotificationModel: Notification,
   ReferralModel: Referral,
+  TransactionModel: TransactionSchema, // Transaction records
 }); // User registration
 const adminSignupService = new AdminSignupService(User); // Admin registration
 const Loginservice = new LoginService(User); // User login
 const adminLoginService = new AdminLoginService(User); // Admin login
-
 
 const referralService = new ReferralService({
   userModel: User,
@@ -159,9 +159,7 @@ const dashboardAdminService = new AdminDashboardService({
   UserModel: User, // All users
 });
 
-const readNotification = new ReadNotification(Notification)
-
-
+const readNotification = new ReadNotification(Notification);
 
 // ======================
 // CONTROLLER INSTANTIATION
@@ -182,8 +180,7 @@ const payment = new Payment(paymentService);
 const investmentController = new InvestmentContr(investmentService);
 const cryptoWalletController = new CryptoWalletContr(cryptoWalletService);
 const DashBoardAdminController = new AdminDashboardContr(dashboardAdminService);
-const  markNotificationUpdate = new MarkNotificationUpdate(readNotification);
-
+const markNotificationUpdate = new MarkNotificationUpdate(readNotification);
 
 // const MarkAsRead = require("../Controller/MarkAsReadContr/MarkAsReadContr");
 // const MarkNotificationAsReadService = require("../Service/markNotificationAsRead/markNotificationAsReadService");
@@ -199,7 +196,7 @@ const  markNotificationUpdate = new MarkNotificationUpdate(readNotification);
 // Path: POST /api/signup
 // Middleware chain: validate registration data → check API key → process signup
 Router.post(
-  "/signup",   
+  "/signup",
   Require_Api_key, // Validate API key in request
   SignupController.signUp, // Handle signup logic
 );
@@ -298,14 +295,14 @@ Router.put(
   "/markNotificationAsRead",
   Require_Api_key, // Validate API key
   // Require_jwt_key, // Verify JWT token
- markNotificationUpdate.UpdateSingleNotification// Mark notification as read
+  markNotificationUpdate.UpdateSingleNotification, // Mark notification as read
 );
 
 Router.put(
   "/markAllNotificationAsRead",
   Require_Api_key, // Validate API key
   // Require_jwt_key, // Verify JWT token
- markNotificationUpdate.UpdateAllNotifications// Mark notification as read
+  markNotificationUpdate.UpdateAllNotifications, // Mark notification as read
 );
 
 // ======================

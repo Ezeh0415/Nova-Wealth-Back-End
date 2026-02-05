@@ -15,6 +15,7 @@ class InvestmentService {
     InvestmentModel,
     WalletModel,
     TransactionModel,
+    NotificationModel
   }) {
     // Initialize all model dependencies
     this.userModels = userModels; // User collection model
@@ -22,6 +23,7 @@ class InvestmentService {
     this.InvestmentModel = InvestmentModel; // Investment records
     this.WalletModel = WalletModel; // User wallet management
     this.TransactionModel = TransactionModel; // Transaction history
+    this.NotificationModel = NotificationModel // notification 
   }
 
   // ======================
@@ -150,12 +152,12 @@ class InvestmentService {
         user: userObjectId,
         type: "investment",
         title: "Investment Created Successfully",
-        message: `Your investment of $${amount} in the ${investmentType} plan has been created successfully.`,
+        message: `Your investment of $${creditedAmountInKobo} in the ${investmentType} plan has been created successfully.`,
         data: { investmentId: investment._id },
         actionUrl: `${process.env.FRONTEND_URL}/investments`,
         category: "investment",
         icon: "investment",
-      });
+      })
 
       await notification.save();
 
