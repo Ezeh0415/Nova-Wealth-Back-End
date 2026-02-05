@@ -23,7 +23,7 @@ class ReferralService {
 
     const referralLink = `${process.env.FRONTEND_URL}/signup?ref=${referralCode}`;
 
-    const referralPage = `${process.env.FRONTEND_URL}/referrals`;
+    const referralPage = `/referrals`;
 
     user.referralCode = referralCode;
     user.referralLink = referralLink;

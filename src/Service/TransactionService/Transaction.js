@@ -141,7 +141,7 @@ class WalletService {
         data: { amount: parsedAmount, currency: currency.toUpperCase() },
         priority: "medium",
         category: "deposit",
-        actionUrl: `${process.env.FRONTEND_URL}/wallet`,
+        actionUrl: `/wallet`,
         icon: "deposit",
       });
 
@@ -282,7 +282,7 @@ class WalletService {
         data: { amount: parsedAmount, currency: currency.toUpperCase() },
         priority: "medium",
         category: "withdrawal",
-        actionUrl: `${process.env.FRONTEND_URL}/wallet`,
+        actionUrl: `/wallet`,
         icon: "withdrawal",
       });
 

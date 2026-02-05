@@ -154,7 +154,7 @@ class InvestmentService {
         title: "Investment Created Successfully",
         message: `Your investment of $${amount} in the ${investmentType} plan has been created successfully.`,
         data: { investmentId: investment._id },
-        actionUrl: `${process.env.FRONTEND_URL}/investments`,
+        actionUrl: `/investments`,
         category: "investment",
         icon: "investment",
       })
