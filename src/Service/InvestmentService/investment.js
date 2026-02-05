@@ -152,7 +152,7 @@ class InvestmentService {
         user: userObjectId,
         type: "investment",
         title: "Investment Created Successfully",
-        message: `Your investment of $${creditedAmountInKobo} in the ${investmentType} plan has been created successfully.`,
+        message: `Your investment of $${amount} in the ${investmentType} plan has been created successfully.`,
         data: { investmentId: investment._id },
         actionUrl: `${process.env.FRONTEND_URL}/investments`,
         category: "investment",
