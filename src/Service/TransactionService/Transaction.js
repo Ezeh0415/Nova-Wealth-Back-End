@@ -12,6 +12,7 @@ class WalletService {
     TransactionModel,
     AdminTransactionModel,
     NotificationModel,
+    ReferralModel,
   }) {
     // Initialize model dependencies
     this.userModel = userModel; // User collection model
@@ -19,6 +20,7 @@ class WalletService {
     this.TransactionModel = TransactionModel; // User transactions model
     this.AdminTransactionModel = AdminTransactionModel; // Admin transactions model
     this.NotificationModel = NotificationModel; // Notification model
+    this.ReferralModel = ReferralModel;
   }
 
   // ======================
@@ -46,6 +48,8 @@ class WalletService {
    */
   async requestDeposit(userId, amount, currency) {
     try {
+
+      
       // 1. VALIDATION - Input parameter validation
       if (!userId) throw new Error("User ID is required");
 
@@ -73,6 +77,11 @@ class WalletService {
       const user = await this.userModel.findOne({ _id: userObjectId });
       if (!user) throw new Error("User not found");
 
+      // REMOVED: Don't check hasMadeFirstDeposit here - only check in confirmDeposit
+      // if(user.hasMadeFirstDeposit) {
+      //   throw new Error("User has already made a deposit");
+      // }
+
       // 3. PENDING CHECK - Prevent multiple pending deposits
       const existingPending = await this.TransactionModel.findOne({
         userId: userObjectId,
@@ -80,9 +89,9 @@ class WalletService {
         status: "pending",
       });
 
-      // IMPORTANT: This logic seems inverted. Currently throws error when no pending deposit is found
-      // Might need correction: Should be if(existingPending) throw error
-      if (!existingPending) {
+      // FIXED: This should check if pending deposit EXISTS
+      if (existingPending) {
+        // CHANGED: From !existingPending to existingPending
         throw new Error("User already has a pending deposit request");
       }
 
@@ -369,19 +378,37 @@ class WalletService {
         throw new Error("Transaction already confirmed");
       }
 
-      // 3. FIND USER WALLET
+      // 3. FIND USER
+      const user = await this.userModel.findOne({ _id: userId });
+      if (!user) {
+        throw new Error(`User not found for userId: ${userId}`);
+      }
+
+      // 4. CHECK IF THIS IS USER'S FIRST DEPOSIT
+      let isFirstDeposit = false;
+      if (user.hasMadeFirstDeposit) {
+        // User already made a deposit - still confirm it, but don't give referral bonus
+        console.log("User has already made a deposit - no referral bonus");
+      } else {
+        // THIS IS THE USER'S FIRST DEPOSIT
+        isFirstDeposit = true;
+        user.hasMadeFirstDeposit = true; // Mark user as having made first deposit
+        user.firstDepositAmount = creditedAmount; // Store the deposit amount
+        user.firstDepositDate = new Date(); // Record the date
+        await user.save(); // Save updated user
+      }
+
+      // 5. FIND USER WALLET
       const wallet = await this.WalletModel.findOne({ userId });
       if (!wallet) {
         throw new Error(`Wallet not found for userId: ${userId}`);
       }
 
-      // 4. FIND MAIN TRANSACTION - Multiple lookup strategies
+      // 6. FIND MAIN TRANSACTION
       let transaction;
-      // Try by MongoDB ObjectId
       if (/^[0-9a-fA-F]{24}$/.test(transactionId)) {
         transaction = await this.TransactionModel.findById(transactionId);
       }
-      // Try by transactionId field if not found
       if (!transaction) {
         transaction = await this.TransactionModel.findOne({
           transactionId: transactionId,
@@ -394,41 +421,199 @@ class WalletService {
         );
       }
 
-      // 5. AMOUNT CONVERSION
-      // NOTE: This converts amount directly (seems like amount is already in kobo)
+      // 7. AMOUNT CONVERSION
       const creditedAmountInKobo = creditedAmount;
 
-      // 6. WALLET UPDATE - Move from pending to balance
+      // 8. WALLET UPDATE
       wallet.pending -= creditedAmountInKobo;
       wallet.totalDeposits += creditedAmountInKobo;
       wallet.balance += creditedAmountInKobo;
-
       await wallet.save();
 
-      // 7. TRANSACTION UPDATE
+      // 9. TRANSACTION UPDATE
       transaction.requestedAmount -= creditedAmount;
       transaction.creditedAmount = creditedAmount;
-      // If partial confirmation, keep pending; if full, mark completed
       transaction.status =
         creditedAmount < transaction.requestedAmount ? "pending" : "completed";
-
       await transaction.save();
 
-      // 8. ADMIN TRANSACTION UPDATE
+      // 10. ADMIN TRANSACTION UPDATE
       adminTransaction.status = "completed";
       adminTransaction.isConfirmed = "true";
-
       await adminTransaction.save();
+
+      // 11. PROCESS REFERRAL BONUS (ONLY FOR FIRST DEPOSIT)
+      let referralBonusResult = null;
+      if (isFirstDeposit) {
+        // Only process referral bonus if this is the user's FIRST deposit
+        referralBonusResult = await this.processReferralBonus(
+          user,
+          creditedAmountInKobo,
+        );
+      }
+
+      // 12. SEND NOTIFICATION
+      await this.NotificationModel.create({
+        user: userId,
+        type: "deposit",
+        title: "Deposit Confirmed",
+        message: `Your deposit of $${(creditedAmountInKobo / 100).toFixed(2)} has been confirmed.${isFirstDeposit ? " This was your first deposit!" : ""}`,
+        category: "transaction",
+      });
 
       return {
         success: true,
         message: "Deposit confirmed successfully",
         wallet,
         transaction,
+        isFirstDeposit,
+        referralBonus: referralBonusResult, // Will show referral bonus result if applicable
       };
     } catch (error) {
       console.error("Error in confirmDeposit:", error);
       throw error;
+    }
+  }
+
+  // 13. ADD THIS METHOD TO PROCESS REFERRAL BONUSES
+  async processReferralBonus(referredUser, depositAmount) {
+    try {
+      console.log(`Processing referral bonus for user: ${referredUser._id}`);
+
+      // STEP 1: Check if this user was referred by someone
+      if (!referredUser.referredBy) {
+        console.log("User was not referred - no bonus to process");
+        return null;
+      }
+
+      console.log(`User was referred by: ${referredUser.referredBy}`);
+
+      // STEP 2: Find the referral record in the database
+      const referral = await this.ReferralModel.findOne({
+        referredUser: referredUser._id,
+        status: { $in: ["pending", "eligible"] }, // Look for pending referrals
+      });
+
+      if (!referral) {
+        console.log("No referral record found for this user");
+        return null;
+      }
+
+      console.log(`Found referral record: ${referral._id}`);
+
+      // STEP 3: Check if deposit meets minimum requirement (e.g., $50 = 5000 cents)
+      const MIN_DEPOSIT_FOR_BONUS = 5000; // 50 USD in cents
+
+      if (depositAmount < MIN_DEPOSIT_FOR_BONUS) {
+        console.log(
+          `Deposit ${depositAmount} is below minimum ${MIN_DEPOSIT_FOR_BONUS}`,
+        );
+
+        // Update referral status but DON'T give bonus
+        referral.status = "eligible";
+        referral.referredUserDeposited = true;
+        referral.referredUserDepositAmount = depositAmount;
+        await referral.save();
+
+        // Send notification to referrer
+        await this.NotificationModel.create({
+          user: referral.referrer,
+          type: "referral",
+          title: "Referral Made First Deposit",
+          message: `${referredUser.userName} made their first deposit of $${(depositAmount / 100).toFixed(2)}, but it's below the $${(MIN_DEPOSIT_FOR_BONUS / 100).toFixed(2)} minimum for bonus.`,
+          category: "referral",
+        });
+
+        return {
+          bonusAwarded: false,
+          reason: "Deposit below minimum requirement",
+          message: `Deposit of $${(depositAmount / 100).toFixed(2)} is below minimum $${(MIN_DEPOSIT_FOR_BONUS / 100).toFixed(2)}`,
+        };
+      }
+
+      console.log(`Deposit meets requirements! Processing bonus...`);
+
+      // STEP 4: DEPOSIT MEETS REQUIREMENTS - AWARD THE BONUS
+      const BONUS_AMOUNT = 1000; // 10 USD in cents = $10
+
+      // Update referral record to mark as completed
+      referral.status = "credited";
+      referral.referredUserDeposited = true;
+      referral.referredUserDepositAmount = depositAmount;
+      referral.bonusDistributed = true;
+      referral.bonusDistributedAt = new Date();
+      await referral.save();
+
+      console.log(`Referral record updated to "credited"`);
+
+      // STEP 5: Find referrer's wallet
+      const referrerWallet = await this.WalletModel.findOne({
+        userId: referral.referrer,
+      });
+
+      if (!referrerWallet) {
+        console.error(`Referrer's wallet not found: ${referral.referrer}`);
+        throw new Error("Referrer's wallet not found");
+      }
+
+      console.log(
+        `Found referrer's wallet, current balance: ${referrerWallet.balance}`,
+      );
+
+      // STEP 6: Add bonus to referrer's wallet
+      referrerWallet.balance += BONUS_AMOUNT;
+      await referrerWallet.save();
+
+      console.log(
+        `Added ${BONUS_AMOUNT} to referrer's wallet, new balance: ${referrerWallet.balance}`,
+      );
+
+      // STEP 7: Create transaction record for the bonus
+      await this.TransactionModel.create({
+        userId: referral.referrer,
+        type: "profit",
+        creditedAmount: BONUS_AMOUNT,
+        status: "completed",
+        description: `Referral bonus from ${referredUser.userName}'s first deposit`,
+        initiatedAt: new Date(),
+      });
+
+      console.log(`Bonus transaction created`);
+
+      // STEP 8: Send notification to referrer
+      await this.NotificationModel.create({
+        user: referral.referrer,
+        type: "referral",
+        title: "🎉 Referral Bonus Awarded!",
+        message: `You received $${(BONUS_AMOUNT / 100).toFixed(2)} bonus from ${referredUser.userName}'s first deposit of $${(depositAmount / 100).toFixed(2)}!`,
+        category: "referral",
+      });
+
+      // STEP 9: Send notification to referred user
+      await this.NotificationModel.create({
+        user: referredUser._id,
+        type: "referral",
+        title: "Referral Bonus Unlocked!",
+        message: `Your referrer has received a $${(BONUS_AMOUNT / 100).toFixed(2)} bonus thanks to your first deposit.`,
+        category: "referral",
+      });
+
+      console.log(`Referral bonus processing complete!`);
+
+      return {
+        bonusAwarded: true,
+        amount: BONUS_AMOUNT,
+        referrerId: referral.referrer,
+        referredUserName: referredUser.userName,
+        depositAmount: depositAmount,
+        message: `$${(BONUS_AMOUNT / 100).toFixed(2)} bonus awarded to referrer`,
+      };
+    } catch (error) {
+      console.error("Referral bonus processing error:", error);
+      return {
+        bonusAwarded: false,
+        error: error.message,
+      };
     }
   }
 

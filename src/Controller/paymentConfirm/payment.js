@@ -19,10 +19,11 @@ class Payment {
     }
 
     const currency = paymentType;
+    const userId = req.user.id;
 
     try {
       const data = await this.Transaction.requestDeposit(
-        req.user.id,
+        userId,
         amount,
         currency,
       );

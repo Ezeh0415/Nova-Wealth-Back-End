@@ -34,8 +34,10 @@ class SignUpController {
         referral,
       });
 
-      const accessToken = await generateAccessToken(user._id);
-      const refreshToken = await generateRefreshToken(user._id);
+      const userId = await user.id;
+
+      const accessToken = await generateAccessToken(userId);
+      const refreshToken = await generateRefreshToken(userId);
 
       res.status(201).json({
         success: true,

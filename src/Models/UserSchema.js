@@ -34,14 +34,6 @@ const UserSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    otp: {
-      type: String,
-      default: "",
-    },
-    otpExpires: {
-      type: Date,
-      default: "",
-    },
     role: {
       type: String,
       enum: ["admin", "user"],
@@ -62,6 +54,17 @@ const UserSchema = new mongoose.Schema(
     referralLink: {
       type: String,
       unique: true,
+    },
+    hasMadeFirstDeposit: {
+      type: Boolean,
+      default: false,
+    },
+    firstDepositAmount: {
+      type: Number,
+      default: 0,
+    },
+    firstDepositDate: {
+      type: Date,
     },
   },
   { timestamps: true },
