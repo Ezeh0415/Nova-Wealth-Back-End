@@ -12,7 +12,7 @@ class Payment {
   }
 
   async requestDeposit(req, res) {
-    const {userId, amount, paymentType } = req.body;
+    const { amount, paymentType } = req.body;
 
     if (!amount) {
       return res.status(400).json({ message: "Amount is required" });
@@ -22,8 +22,7 @@ class Payment {
 
     try {
       const data = await this.Transaction.requestDeposit(
-        userId,
-        // req.user.id,
+        req.user.id,
         amount,
         currency,
       );
@@ -46,7 +45,6 @@ class Payment {
 
   async confirmDeposit(req, res) {
     const { userId, creditedAmount, transactionId } = req.body;
-    
 
     if (!userId || !creditedAmount || !transactionId) {
       return res.status(400).json({ message: "All fields are required" });
