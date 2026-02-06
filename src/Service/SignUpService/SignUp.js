@@ -46,9 +46,7 @@ class SignUpService {
           referralCode: referral, // Exact match, case-sensitive
         }).session(session);
 
-        if (!referrerUserCode) {
-          throw new Error("Invalid referral code");
-        }
+       
 
         console.log("3️⃣ Create new user");
 
