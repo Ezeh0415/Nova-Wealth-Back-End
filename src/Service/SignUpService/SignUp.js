@@ -25,6 +25,7 @@ class SignUpService {
         if (!fullName || !userName || !email || !password) {
           throw new Error("All fields are required");
         }
+
         console.log("2️⃣ Check if user exists (in transaction)");
         // 2️⃣ Check if user exists (in transaction)
         const existingUser = await this.UserModel.findOne({
@@ -41,15 +42,7 @@ class SignUpService {
           throw new Error("Email already exists");
         }
 
-        console.log(" Check if user exists (in transaction)");
-        const referrerUserCode = await this.UserModel.findOne({
-          referralCode: referral, // Exact match, case-sensitive
-        }).session(session);
-
-       
-
         console.log("3️⃣ Create new user");
-
         // 3️⃣ Create new user
         const newUser = new this.UserModel({
           fullName,
@@ -59,11 +52,11 @@ class SignUpService {
         });
 
         console.log("4️⃣ Save user first to get _id");
-
         // 4️⃣ Save user first to get _id
         await newUser.save({ session });
 
         let referralBonus = 0;
+        let referrerUser = null;
 
         console.log("5️⃣ Handle referral if valid code");
         // 5️⃣ Handle referral if valid code
@@ -73,6 +66,8 @@ class SignUpService {
           }).session(session);
 
           if (referrer) {
+            referrerUser = referrer;
+
             // Update user with referrer
             newUser.referredBy = referrer._id;
             await newUser.save({ session });
@@ -86,7 +81,7 @@ class SignUpService {
             });
             await Referrals.save({ session });
 
-            // Update referrer
+            // Update referrer (uncomment if needed)
             // referrer.referrals.push(newUser._id);
             // referrer.totalReferrals += 1;
             await referrer.save({ session });
@@ -94,8 +89,8 @@ class SignUpService {
             // Set referral bonus
             referralBonus = 1000; // 10 USD in cents/kobo
 
-            console.log(" 8️⃣ Generate transaction");
-
+            console.log("5a️⃣ Generate transaction for referrer");
+            // Generate transaction for referrer
             const transaction = new this.TransactionModel({
               userId: referrer._id,
               type: "profit",
@@ -103,8 +98,7 @@ class SignUpService {
               description: `Referral amount sent`,
               status: "completed",
             });
-
-            await transaction.save();
+            await transaction.save({ session }); // ⚠️ FIXED: Added session
           }
           // If invalid code, just ignore (don't throw error)
         }
@@ -122,35 +116,34 @@ class SignUpService {
           { session },
         );
 
-        await this.WalletModel.updateOne(
-          { userId: referrerUserCode._id },
-          { $inc: { balance: referralBonus } },
-          { session }, // Add session if in transaction
-        );
+        // ⚠️ FIXED: Only update referrer wallet if referrer exists
+        if (referrerUser) {
+          await this.WalletModel.updateOne(
+            { userId: referrerUser._id },
+            { $inc: { balance: referralBonus } },
+            { session },
+          );
+        }
 
         console.log("7️⃣ Create welcome notification");
         // 7️⃣ Create welcome notification
         const notification = new this.NotificationModel({
           user: newUser._id,
-          type: "WELCOME",
+          // ⚠️ FIXED: Removed duplicate 'type' and 'category'
+          type: "signup",
           title: "Welcome to Our Platform!",
           message: `Hello ${newUser.fullName}, thank you for signing up!`,
           priority: "low",
-          category: "account",
-          type: "signup",
-          category: "signup",
+          category: "signup", // ⚠️ FIXED: Kept only one category
         });
         await notification.save({ session });
 
-        console.log(" 8️⃣ Generate transaction");
-        // 8️⃣ Generate transaction
-
-        console.log(" 9️⃣ Return sanitized data");
-        // 9️⃣ Return sanitized data
+        console.log("8️⃣ Return sanitized data");
+        // 8️⃣ Return sanitized data
         return {
           id: newUser._id,
           fullName: newUser.fullName,
-          username: newUser.username,
+          userName: newUser.userName, // ⚠️ FIXED: Changed from 'username' to 'userName'
           email: newUser.email,
           referralCode: newUser.referralCode,
           referredBy: newUser.referredBy,
