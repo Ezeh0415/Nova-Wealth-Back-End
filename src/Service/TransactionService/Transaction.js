@@ -478,15 +478,14 @@ class WalletService {
   // 13. ADD THIS METHOD TO PROCESS REFERRAL BONUSES
   async processReferralBonus(referredUser, depositAmount) {
     try {
-      console.log(`Processing referral bonus for user: ${referredUser._id}`);
+      // console.log(`Processing referral bonus for user: ${referredUser._id}`);
 
       // STEP 1: Check if this user was referred by someone
       if (!referredUser.referredBy) {
-        console.log("User was not referred - no bonus to process");
         return null;
       }
 
-      console.log(`User was referred by: ${referredUser.referredBy}`);
+      // console.log(`User was referred by: ${referredUser.referredBy}`);
 
       // STEP 2: Find the referral record in the database
       const referral = await this.ReferralModel.findOne({
@@ -495,19 +494,16 @@ class WalletService {
       });
 
       if (!referral) {
-        console.log("No referral record found for this user");
         return null;
       }
 
-      console.log(`Found referral record: ${referral._id}`);
+      // console.log(`Found referral record: ${referral._id}`);
 
       // STEP 3: Check if deposit meets minimum requirement (e.g., $50 = 5000 cents)
       const MIN_DEPOSIT_FOR_BONUS = 5000; // 50 USD in cents
 
       if (depositAmount < MIN_DEPOSIT_FOR_BONUS) {
-        console.log(
-          `Deposit ${depositAmount} is below minimum ${MIN_DEPOSIT_FOR_BONUS}`,
-        );
+        
 
         // Update referral status but DON'T give bonus
         referral.status = "eligible";
@@ -531,8 +527,6 @@ class WalletService {
         };
       }
 
-      console.log(`Deposit meets requirements! Processing bonus...`);
-
       // STEP 4: DEPOSIT MEETS REQUIREMENTS - AWARD THE BONUS
       const BONUS_AMOUNT = 1000; // 10 USD in cents = $10
 
@@ -544,7 +538,6 @@ class WalletService {
       referral.bonusDistributedAt = new Date();
       await referral.save();
 
-      console.log(`Referral record updated to "credited"`);
 
       // STEP 5: Find referrer's wallet
       const referrerWallet = await this.WalletModel.findOne({
@@ -552,21 +545,12 @@ class WalletService {
       });
 
       if (!referrerWallet) {
-        console.error(`Referrer's wallet not found: ${referral.referrer}`);
         throw new Error("Referrer's wallet not found");
       }
-
-      console.log(
-        `Found referrer's wallet, current balance: ${referrerWallet.balance}`,
-      );
 
       // STEP 6: Add bonus to referrer's wallet
       referrerWallet.balance += BONUS_AMOUNT;
       await referrerWallet.save();
-
-      console.log(
-        `Added ${BONUS_AMOUNT} to referrer's wallet, new balance: ${referrerWallet.balance}`,
-      );
 
       // STEP 7: Create transaction record for the bonus
       await this.TransactionModel.create({
@@ -578,7 +562,6 @@ class WalletService {
         initiatedAt: new Date(),
       });
 
-      console.log(`Bonus transaction created`);
 
       // STEP 8: Send notification to referrer
       await this.NotificationModel.create({
@@ -598,7 +581,6 @@ class WalletService {
         category: "referral",
       });
 
-      console.log(`Referral bonus processing complete!`);
 
       return {
         bonusAwarded: true,

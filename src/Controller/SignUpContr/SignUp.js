@@ -31,7 +31,7 @@ class SignUpController {
         userName,
         email,
         password: hashedPassword,
-        referral,
+        referralCode: referral,
       });
 
       const userId = await user.id;

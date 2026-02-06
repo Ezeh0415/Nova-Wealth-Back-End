@@ -21,6 +21,7 @@ class SignUpService {
     try {
       return await session.withTransaction(async () => {
         const { fullName, userName, email, password, referralCode } = userData;
+        console.log(referralCode);
 
         // 1️⃣ Validate fields
         if (!fullName || !userName || !email || !password) {
@@ -83,7 +84,7 @@ class SignUpService {
               user: referrerUser._id,
               type: "referral",
               title: "New Referral!",
-              message: `${newUser.userName} signed up using your referral code. Bonus will be awarded after their first deposit of $${this.MIN_DEPOSIT_FOR_BONUS/100}.`,
+              message: `${newUser.userName} signed up using your referral code. Bonus will be awarded after their first deposit of $${this.MIN_DEPOSIT_FOR_BONUS / 100}.`,
               priority: "medium",
               category: "referral",
             });
@@ -94,7 +95,7 @@ class SignUpService {
               user: newUser._id,
               type: "referral",
               title: "Referral Bonus Available!",
-              message: `Make your first deposit of $${this.MIN_DEPOSIT_FOR_BONUS/100} or more to unlock your referrer's bonus!`,
+              message: `Make your first deposit of $${this.MIN_DEPOSIT_FOR_BONUS / 100} or more to unlock your referrer's bonus!`,
               priority: "medium",
               category: "referral",
             });

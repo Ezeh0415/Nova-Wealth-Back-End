@@ -15,7 +15,7 @@ const referralSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "completed", "credited"],
+      enum: ["pending", "eligible", "completed", "credited"],
       default: "pending",
     },
     bonusAmount: {
