@@ -15,7 +15,8 @@ class InvestmentService {
     InvestmentModel,
     WalletModel,
     TransactionModel,
-    NotificationModel
+    NotificationModel,
+    InvestmentPlanModel, // ADDED: Investment Plan Model
   }) {
     // Initialize all model dependencies
     this.userModels = userModels; // User collection model
@@ -23,7 +24,58 @@ class InvestmentService {
     this.InvestmentModel = InvestmentModel; // Investment records
     this.WalletModel = WalletModel; // User wallet management
     this.TransactionModel = TransactionModel; // Transaction history
-    this.NotificationModel = NotificationModel // notification 
+    this.NotificationModel = NotificationModel; // Notification system
+    this.InvestmentPlanModel = InvestmentPlanModel; // ADDED: Investment plans
+  }
+
+  // ======================
+  // HELPER METHODS
+  // ======================
+
+  /**
+   * Get ROI percentage for investment type from database
+   * @param {string} investmentType - Investment plan type
+   * @returns {number} - ROI percentage
+   */
+  async getROIForInvestmentType(investmentType) {
+    try {
+      const plan = await this.InvestmentPlanModel.findOne({
+        planId: investmentType,
+        isActive: true,
+      });
+
+      if (!plan) {
+        throw new Error(`Investment plan "${investmentType}" not found or inactive`);
+      }
+
+      return plan.roi;
+    } catch (error) {
+      console.error("Error getting ROI:", error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Get duration for investment type from database
+   * @param {string} investmentType - Investment plan type
+   * @returns {number} - Duration in days
+   */
+  async getDurationForInvestmentType(investmentType) {
+    try {
+      const plan = await this.InvestmentPlanModel.findOne({
+        planId: investmentType,
+        isActive: true,
+      });
+
+      if (!plan) {
+        throw new Error(`Investment plan "${investmentType}" not found or inactive`);
+      }
+
+      return plan.duration;
+    } catch (error) {
+      console.error("Error getting duration:", error.message);
+      throw error;
+    }
   }
 
   // ======================
@@ -36,42 +88,14 @@ class InvestmentService {
    *
    * @param {string} userId - ID of the user making the investment
    * @param {number} amount - Investment amount in base currency (e.g., dollars)
-   * @param {number} roi - Return on Investment percentage (e.g., 5 for 5%)
    * @param {string} investmentType - Type of investment plan (basic, standard, premium, ultimate)
-   * @param {string|Date} investmentStartDate - When the investment starts earning
-   * @param {string|Date} investmentEndDate - When the investment matures
-   * @returns {Object} - Success response with investment details and updated wallet
+   * @returns {Object} - Success response with investment details
    * @throws {Error} - If validation fails, insufficient funds, or user/wallet not found
-   *
-   * Workflow:
-   * 1. Validate all input parameters
-   * 2. Convert userId to ObjectId and find user
-   * 3. Find user's wallet and check balance
-   * 4. Convert amount to kobo/cents (internal precision)
-   * 5. Deduct amount from wallet balance
-   * 6. Create investment record
-   * 7. Create transaction records (user and admin)
-   *
-   * Note: Uses kobo/cents internally (100 units = 1 currency unit) for financial precision
    */
-  async invest(
-    userId,
-    amount,
-    roi,
-    investmentType,
-    investmentStartDate,
-    investmentEndDate,
-  ) {
+  async invest(userId, amount, investmentType) {
     try {
-      // 1. VALIDATION - Ensure all required fields are provided
-      if (
-        !userId ||
-        !amount ||
-        !roi ||
-        !investmentType ||
-        !investmentStartDate ||
-        !investmentEndDate
-      ) {
+      // 1. VALIDATION
+      if (!userId || !amount || !investmentType) {
         throw new Error("All fields are required");
       }
 
@@ -79,108 +103,256 @@ class InvestmentService {
         throw new Error("Amount must be greater than 0");
       }
 
-      // 2. USER VERIFICATION - Convert ID and find user
+      // 2. CHECK INVESTMENT PLAN EXISTS AND IS ACTIVE
+      const plan = await this.InvestmentPlanModel.findOne({
+        planId: investmentType,
+        isActive: true,
+      });
+
+      if (!plan) {
+        throw new Error(`Investment plan "${investmentType}" not found or inactive`);
+      }
+
+      // 3. CHECK AMOUNT WITHIN PLAN LIMITS
+      if (amount < plan.minAmount) {
+        throw new Error(`Minimum investment for ${plan.name} is $${plan.minAmount}`);
+      }
+
+      if (amount > plan.maxAmount) {
+        throw new Error(`Maximum investment for ${plan.name} is $${plan.maxAmount}`);
+      }
+
+      // 4. USER VERIFICATION
       const userObjectId = new mongoose.Types.ObjectId(userId);
       const user = await this.userModels.findById(userObjectId);
       if (!user) {
         throw new Error("User not found");
       }
 
-      // 3. WALLET VERIFICATION - Find user's wallet
+      // 5. WALLET VERIFICATION
       const wallet = await this.WalletModel.findOne({ userId: userObjectId });
       if (!wallet) {
         throw new Error("Wallet not found for user");
       }
 
-      // 4. AMOUNT CONVERSION - Convert to smallest unit for precision
-      const creditedAmountInKobo = amount * 100; // e.g., $10 = 1000 kobo
+      // 6. AMOUNT CONVERSION
+      const creditedAmountInKobo = amount * 100;
 
-      // 5. BALANCE CHECK - Verify user has sufficient funds
+      // 7. BALANCE CHECK
       if (wallet.balance < creditedAmountInKobo) {
         throw new Error(
           `Insufficient balance. Available: $${wallet.balance / 100}, Required: $${amount}`,
         );
       }
 
-      // 6. WALLET UPDATE - Deduct investment amount from available balance
-      // Note: Line 73 has a comment about using userId vs userObjectId
-      await this.WalletModel.updateOne(
-        { userId: userObjectId }, // Fixed as per comment: should be userId field, not userObjectId
-        { $inc: { balance: -creditedAmountInKobo } },
-      );
+      // 8. GET ROI FROM PLAN (not from parameter)
+      const roi = plan.roi;
 
-      // 7. INVESTMENT CREATION - Store investment details
+      // 9. DEDUCT FROM BALANCE
+      wallet.balance -= creditedAmountInKobo;
+      wallet.pendingInvestment = (wallet.pendingInvestment || 0) + creditedAmountInKobo;
+      await wallet.save();
+
+      // 10. CREATE INVESTMENT (WITHOUT FINAL DATES - will be set on confirmation)
       const investment = new this.InvestmentModel({
         userId: userObjectId,
-        amount: creditedAmountInKobo, // Store in kobo for internal calculations
-        roi,
-        investmentType,
-        investmentStartDate: new Date(investmentStartDate),
-        investmentEndDate: new Date(investmentEndDate),
-        status: "active", // Initial status
+        amount: creditedAmountInKobo,
+        roi: roi,
+        investmentType: investmentType,
+        investmentPlanName: plan.name, // Store plan name for reference
+        investmentStatus: "pending",
+        planId: plan.planId, // Reference to plan
       });
 
       await investment.save();
 
-      // 8. USER TRANSACTION RECORD - Log investment transaction
+      // 11. CREATE TRANSACTIONS
       const transaction = new this.TransactionModel({
         userId: userObjectId,
         type: "investment",
         creditedAmount: creditedAmountInKobo,
-        description: `New investment in ${investmentType} plan`,
-        status: "active",
+        description: `Investment request - ${plan.name} (${investmentType})`,
+        status: "pending",
+        investmentId: investment._id,
       });
 
       await transaction.save();
 
-      // 9. ADMIN TRANSACTION RECORD - For admin monitoring and reporting
       const adminTransaction = new this.AdminTransactionModel({
         userId: userObjectId,
-        transactionId: investment._id, // Link to investment record
+        transactionId: investment._id,
         fullName: user.fullName,
         userName: user.userName,
         email: user.email,
         type: "investment",
         creditedAmount: creditedAmountInKobo,
-        status: "active",
+        status: "pending",
+        investmentType: investmentType,
+        investmentPlanName: plan.name,
       });
 
       await adminTransaction.save();
 
-      // 10.Notification can be added here if needed
-      const notification = new this.NotificationModel({
+      // 12. SEND NOTIFICATION
+      await this.NotificationModel.create({
         user: userObjectId,
         type: "investment",
-        title: "Investment Created Successfully",
-        message: `Your investment of $${amount} in the ${investmentType} plan has been created successfully.`,
-        data: { investmentId: investment._id },
-        actionUrl: `/investments`,
+        title: "Investment Request Created",
+        message: `Your ${plan.name} investment request of $${amount} has been created and is pending approval.`,
+        data: {
+          investmentId: investment._id,
+          amount: amount,
+          planName: plan.name,
+          roi: roi,
+        },
         category: "investment",
         icon: "investment",
-      })
+      });
 
-      await notification.save();
-
-      // 11. SUCCESS RESPONSE - Return formatted investment details
       return {
         success: true,
-        message: "Investment created successfully",
+        message: "Investment request created successfully. Awaiting confirmation.",
         investment: {
           id: investment._id,
-          amount: investment.amount / 100, // Convert back to base currency for response
-          roi: investment.roi,
-          type: investment.investmentType,
-          startDate: investment.investmentStartDate,
-          endDate: investment.investmentEndDate,
-          status: investment.status,
+          amount: amount,
+          investmentType: investmentType,
+          planName: plan.name,
+          roi: roi,
+          status: "pending",
         },
         wallet: {
-          newBalance: (wallet.balance - creditedAmountInKobo) / 100, // Show updated balance
+          balance: wallet.balance / 100,
+          pendingInvestment: wallet.pendingInvestment / 100,
         },
       };
     } catch (error) {
       console.error("❌ Investment creation error:", error.message);
-      throw error; // Re-throw for controller error handling
+      throw error;
+    }
+  }
+
+  // ======================
+  // INVESTMENT CONFIRMATION
+  // ======================
+
+  /**
+   * Confirms and activates a pending investment
+   * Sets actual start and end dates based on plan duration
+   *
+   * @param {string} investmentId - ID of investment to confirm
+   * @returns {Object} - Success response with activated investment details
+   */
+  async confirmInvestment(investmentId) {
+    try {
+      // 1. FIND INVESTMENT
+      const investment = await this.InvestmentModel.findById(investmentId);
+      if (!investment) {
+        throw new Error("Investment not found");
+      }
+
+      // 2. CHECK STATUS
+      if (investment.investmentStatus !== "pending") {
+        throw new Error(`Investment is already ${investment.investmentStatus}`);
+      }
+
+      // 3. FIND USER'S WALLET
+      const wallet = await this.WalletModel.findOne({ userId: investment.userId });
+      if (!wallet) {
+        throw new Error("Wallet not found");
+      }
+
+      // 4. FIND INVESTMENT PLAN FOR DURATION
+      const plan = await this.InvestmentPlanModel.findOne({
+        planId: investment.investmentType,
+      });
+
+      if (!plan) {
+        throw new Error(`Investment plan "${investment.investmentType}" not found`);
+      }
+
+      // 5. MOVE FUNDS FROM PENDING TO INVESTMENT BALANCE
+      if (wallet.pendingInvestment < investment.amount) {
+        throw new Error("Insufficient pending investment balance");
+      }
+
+      wallet.pendingInvestment -= investment.amount;
+      wallet.invBalance = (wallet.invBalance || 0) + investment.amount;
+      await wallet.save();
+
+      console.log(
+        `✅ Moved ${investment.amount / 100} from pending to investment balance`,
+      );
+
+      // 6. SET ACTUAL DATES BASED ON PLAN DURATION
+      const actualStartDate = new Date();
+      const actualEndDate = new Date(actualStartDate);
+      actualEndDate.setDate(actualEndDate.getDate() + plan.duration);
+
+      // 7. UPDATE INVESTMENT
+      investment.investmentStartDate = actualStartDate;
+      investment.investmentEndDate = actualEndDate;
+      investment.investmentStatus = "active";
+      investment.lastRoiAt = actualStartDate; // Initialize ROI tracking
+      await investment.save();
+
+      // 8. UPDATE ADMIN TRANSACTION
+      await this.AdminTransactionModel.updateOne(
+        { transactionId: investment._id },
+        { status: "active" }
+      );
+
+      // 9. UPDATE USER TRANSACTION
+      await this.TransactionModel.updateOne(
+        {
+          investmentId: investment._id,
+          status: "pending",
+        },
+        {
+          status: "active",
+          description: `${plan.name} investment activated - $${(investment.amount / 100).toFixed(2)} invested`,
+        }
+      );
+
+      // 10. SEND NOTIFICATION
+      await this.NotificationModel.create({
+        user: investment.userId,
+        type: "investment",
+        title: "Investment Activated! 🎉",
+        message: `Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} is now active. It will mature on ${actualEndDate.toLocaleDateString()}.`,
+        data: {
+          investmentId: investment._id,
+          startDate: actualStartDate,
+          endDate: actualEndDate,
+          planName: plan.name,
+          roi: plan.roi,
+        },
+        category: "investment",
+        icon: "investment",
+      });
+
+      return {
+        success: true,
+        message: "Investment confirmed and activated successfully",
+        investment: {
+          id: investment._id,
+          amount: investment.amount / 100,
+          investmentType: investment.investmentType,
+          planName: plan.name,
+          roi: investment.roi,
+          startDate: actualStartDate,
+          endDate: actualEndDate,
+          duration: plan.duration,
+          status: "active",
+        },
+        wallet: {
+          pendingInvestment: wallet.pendingInvestment / 100,
+          invBalance: wallet.invBalance / 100,
+          balance: wallet.balance / 100,
+        },
+      };
+    } catch (error) {
+      console.error("❌ Investment confirmation error:", error.message);
+      throw error;
     }
   }
 
@@ -190,87 +362,80 @@ class InvestmentService {
 
   /**
    * Processes daily Return on Investment for all active investments
-   * This is typically called by a cron job every 24 hours
-   *
-   * Workflow:
-   * 1. Defines daily interval (24 hours)
-   * 2. Sets ROI rates for different investment plans
-   * 3. Fetches all active investments
-   * 4. For each investment:
-   *    - Checks if 24 hours have passed since last ROI
-   *    - Checks if investment has expired
-   *    - Calculates profit based on investment type rate
-   *    - Updates investment returns
-   *    - Credits profit to investment balance
-   *    - Creates transaction record
-   *
-   * Important: Prevents double-crediting by checking lastRoiAt timestamp
+   * Uses ROI rates from InvestmentPlan model
    */
   async processDailyROI() {
-    // Constants
-    const DAILY_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    try {
+      const now = new Date();
 
-    // ROI rates for different investment plans (2%, 4%, 6%, 8% daily)
-    const PLAN_RATES = {
-      basic: 0.02, // 2% daily ROI
-      standard: 0.04, // 4% daily ROI
-      premium: 0.06, // 6% daily ROI
-      ultimate: 0.08, // 8% daily ROI
-    };
+      // Get all ACTIVE investments
+      const investments = await this.InvestmentModel.find({
+        investmentStatus: "active",
+      });
 
-    const now = new Date(); // Current timestamp for processing
+      console.log(`🔄 Processing ROI for ${investments.length} active investments`);
 
-    // Fetch all active investments that need ROI processing
-    const investments = await this.InvestmentModel.find({
-      investmentStatus: "active",
-    });
+      for (const inv of investments) {
+        try {
+          // Check if investment has expired
+          if (now >= inv.investmentEndDate) {
+            await this.completeInvestment(inv._id);
+            continue;
+          }
 
-    // Process each investment individually
-    for (const inv of investments) {
-      // Get ROI rate for this investment type
-      const rate = PLAN_RATES[inv.investmentType];
-      if (!rate) continue; // Skip if investment type not recognized
+          // Check if we've already processed ROI today
+          const lastRun = inv.lastRoiAt || inv.investmentStartDate;
+          const hoursSinceLastRun = (now - lastRun) / (1000 * 60 * 60);
 
-      // Determine when ROI was last calculated
-      const lastRun = inv.lastRoiAt || inv.investmentStartDate;
+          if (hoursSinceLastRun < 24) {
+            continue; // Not 24 hours yet
+          }
 
-      // 🔒 PREVENT DOUBLE CREDITING
-      // Only process if at least 24 hours have passed since last ROI
-      if (now - lastRun < DAILY_INTERVAL) continue;
+          // Get ROI rate from plan (convert percentage to decimal for calculation)
+          const plan = await this.InvestmentPlanModel.findOne({
+            planId: inv.investmentType,
+          });
 
-      // ⛔ CHECK IF INVESTMENT HAS EXPIRED
-      // If end date reached, mark as completed instead of processing ROI
-      if (now >= inv.investmentEndDate) {
-        await this.completeInvestment(inv._id);
-        continue; // Skip to next investment
+          if (!plan) {
+            console.warn(`Plan not found for investment type: ${inv.investmentType}`);
+            continue;
+          }
+
+          // Calculate profit: amount * (roi/100) for daily percentage
+          const dailyRate = plan.roi / 100;
+          const profit = Math.round(inv.amount * dailyRate);
+
+          // Update investment returns
+          inv.TotalReturns = (inv.TotalReturns || 0) + profit;
+          inv.lastRoiAt = now;
+          await inv.save();
+
+          // Update wallet investment balance
+          await this.WalletModel.updateOne(
+            { userId: inv.userId },
+            { $inc: { invBalance: profit } }
+          );
+
+          // Create transaction record
+          await this.TransactionModel.create({
+            userId: inv.userId,
+            investmentId: inv._id,
+            type: "profit",
+            creditedAmount: profit,
+            description: `Daily ROI (${plan.roi}%) for ${plan.name} investment`,
+            status: "completed",
+          });
+
+          console.log(`💰 Credited $${profit / 100} ROI for investment ${inv._id}`);
+        } catch (error) {
+          console.error(`Error processing ROI for investment ${inv._id}:`, error.message);
+          // Continue with other investments
+        }
       }
 
-      // Validate investment amount is a positive number
-      const amount = Number(inv.amount);
-      if (!Number.isFinite(amount) || amount <= 0) continue;
-
-      // Calculate profit (no rounding to prevent fractional loss)
-      const profit = amount * rate; // e.g., 1000 * 0.02 = 20 kobo
-
-      // Update investment record with new returns
-      inv.TotalReturns = (inv.TotalReturns || 0) + profit;
-      inv.lastRoiAt = now; // Update last ROI timestamp
-      await inv.save();
-
-      // Credit profit to investment balance (separate from main balance)
-      await this.WalletModel.updateOne(
-        { userId: inv.userId },
-        { $inc: { invBalance: profit } }, // invBalance holds ROI earnings
-      );
-
-      // Create transaction record for audit trail
-      await this.TransactionModel.create({
-        userId: inv.userId,
-        investmentId: inv._id,
-        type: "profit",
-        creditedAmount: profit,
-        description: "Daily investment ROI",
-      });
+      console.log(`✅ Completed daily ROI processing`);
+    } catch (error) {
+      console.error("❌ Daily ROI processing error:", error);
     }
   }
 
@@ -282,79 +447,181 @@ class InvestmentService {
    * Completes an investment when it reaches maturity
    * Returns capital + accumulated ROI to user's main balance
    *
-   * @param {string} investmentId - ID of the investment to complete
-   * @returns {Object} - The completed investment document
-   * @throws {Error} - If investment or wallet not found
-   *
-   * Workflow:
-   * 1. Find the investment
-   * 2. Verify it's still active
-   * 3. Find user's wallet
-   * 4. Find related transactions
-   * 5. Transfer capital + ROI from invBalance to main balance
-   * 6. Update investment status to "completed"
-   * 7. Update transaction status
+   * @param {string|string[]} investmentId - ID(s) of investment(s) to complete
+   * @returns {Object|Object[]} - Completed investment(s)
    */
   async completeInvestment(investmentId) {
-    // 1. FIND INVESTMENT
+    // Handle array of IDs
+    if (Array.isArray(investmentId)) {
+      const results = [];
+      for (const id of investmentId) {
+        try {
+          const res = await this._completeSingleInvestment(id);
+          results.push({ id, success: true, investment: res });
+        } catch (err) {
+          results.push({
+            id,
+            success: false,
+            error: err?.message || String(err),
+          });
+        }
+      }
+      return results;
+    }
+
+    // Single investment
+    return await this._completeSingleInvestment(investmentId);
+  }
+
+  /**
+   * Internal method to complete a single investment
+   */
+  async _completeSingleInvestment(investmentId) {
     const investment = await this.InvestmentModel.findById(investmentId);
     if (!investment) {
       throw new Error("Investment not found");
     }
 
-    // 2. VERIFY STATUS - Only complete if still active
+    // Only proceed if active
     if (investment.investmentStatus !== "active") {
-      return; // Silently ignore or could log a warning
+      return investment;
     }
 
-    // 3. FIND USER'S WALLET
-    const wallet = await this.WalletModel.findOne({
-      userId: investment.userId,
-    });
-
+    // Find user's wallet
+    const wallet = await this.WalletModel.findOne({ userId: investment.userId });
     if (!wallet) {
       throw new Error("Wallet not found");
     }
 
-    // 4. FIND RELATED TRANSACTIONS (for updating status)
-    const transaction = await this.TransactionModel.find({
-      userId: investment.userId,
-    });
+    // Calculate total to return (capital + accumulated returns)
+    const totalInvBalance = wallet.invBalance || 0;
+    const capital = investment.amount || 0;
+    const returns = totalInvBalance - capital > 0 ? totalInvBalance - capital : 0;
 
-    // 5. TRANSFER FUNDS - Capital + ROI to main balance
-    // Capital (investment.amount) + ROI (wallet.invBalance)
-    wallet.balance += investment.amount + wallet.invBalance;
-    wallet.totalReturn += wallet.invBalance; // Track total returns
-    wallet.invBalance = 0; // Reset investment balance
-
+    // Transfer to main balance
+    wallet.balance = (wallet.balance || 0) + totalInvBalance;
+    wallet.totalReturn = (wallet.totalReturn || 0) + returns;
+    wallet.invBalance = wallet.invBalance - totalInvBalance; // Reset to 0
     await wallet.save();
 
-    // 6. UPDATE INVESTMENT STATUS
+    // Update investment status
     investment.investmentStatus = "completed";
-    investment.investmentEndDate = new Date(); // Set actual completion date
+    investment.actualEndDate = new Date();
     await investment.save();
 
-    // 7. UPDATE TRANSACTION STATUS (if transactions found)
-    if (transaction && transaction.length > 0) {
-      // Note: This updates all user transactions, not just investment-related ones
-      // Might need to be more specific
-      transaction.status = "completed";
-      await transaction.save();
-    }
+    // Update transactions
+    await this.TransactionModel.updateMany(
+      { investmentId: investment._id, status: "active" },
+      { status: "completed" }
+    );
 
-    const notification = new this.NotificationModel({
+    // Create admin transaction for completion
+    await this.AdminTransactionModel.create({
+      userId: investment.userId,
+      transactionId: investment._id,
+      type: "investment_completion",
+      creditedAmount: totalInvBalance,
+      status: "completed",
+      investmentType: investment.investmentType,
+    });
+
+    // Send notification
+    await this.NotificationModel.create({
       user: investment.userId,
       type: "investment",
-      title: "Investment Completed",
-      message: `Your investment in the ${investment.investmentType} plan has completed. Your capital and returns have been credited to your wallet.`,
+      title: "Investment Completed! 🎊",
+      message: `Your ${investment.investmentType} investment has completed. $${(totalInvBalance / 100).toFixed(2)} (Capital: $${(capital / 100).toFixed(2)} + Returns: $${(returns / 100).toFixed(2)}) has been credited to your wallet.`,
+      data: {
+        investmentId: investment._id,
+        capital: capital / 100,
+        returns: returns / 100,
+        total: totalInvBalance / 100,
+      },
+      category: "investment",
+      icon: "investment",
+    });
+
+    return {
+      investment,
+      summary: {
+        capital: capital / 100,
+        returns: returns / 100,
+        total: totalInvBalance / 100,
+        status: "completed",
+      },
+    };
+  }
+
+  // ======================
+  // ADDITIONAL METHODS
+  // ======================
+
+  /**
+   * Get user's active investments
+   */
+  // async getUserActiveInvestments(userId) {
+  //   const userObjectId = new mongoose.Types.ObjectId(userId);
+  //   return await this.InvestmentModel.find({
+  //     userId: userObjectId,
+  //     investmentStatus: "active",
+  //   }).sort({ investmentStartDate: -1 });
+  // }
+
+  // /**
+  //  * Get user's investment history
+  //  */
+  // async getUserInvestmentHistory(userId) {
+  //   const userObjectId = new mongoose.Types.ObjectId(userId);
+  //   return await this.InvestmentModel.find({
+  //     userId: userObjectId,
+  //     investmentStatus: { $in: ["completed", "cancelled"] },
+  //   }).sort({ investmentEndDate: -1 });
+  // }
+
+  /**
+   * Cancel a pending investment
+   */
+  async cancelInvestment(investmentId) {
+    const investment = await this.InvestmentModel.findById(investmentId);
+    if (!investment) {
+      throw new Error("Investment not found");
+    }
+
+    if (investment.investmentStatus !== "pending") {
+      throw new Error(`Cannot cancel ${investment.investmentStatus} investment`);
+    }
+
+    // Refund to wallet
+    const wallet = await this.WalletModel.findOne({ userId: investment.userId });
+    if (wallet) {
+      wallet.balance += investment.amount;
+      wallet.pendingInvestment -= investment.amount;
+      await wallet.save();
+    }
+
+    // Update investment
+    investment.investmentStatus = "cancelled";
+    investment.cancelledAt = new Date();
+    await investment.save();
+
+    // Update transactions
+    await this.TransactionModel.updateMany(
+      { investmentId: investment._id },
+      { status: "cancelled" }
+    );
+
+    // Send notification
+    await this.NotificationModel.create({
+      user: investment.userId,
+      type: "investment",
+      title: "Investment Cancelled",
+      message: `Your ${investment.investmentType} investment of $${(investment.amount / 100).toFixed(2)} has been cancelled and refunded.`,
       data: { investmentId: investment._id },
       category: "investment",
       icon: "investment",
     });
 
-    await notification.save();
-
-    return investment; // Return completed investment for reference
+    return investment;
   }
 }
 
@@ -362,44 +629,3 @@ class InvestmentService {
 // MODULE EXPORT
 // ======================
 module.exports = InvestmentService;
-
-// ======================
-// KEY ARCHITECTURE NOTES:
-// ======================
-// 1. FINANCIAL PRECISION: Uses kobo/cents (100 units = 1 currency unit) internally
-// 2. ROI CALCULATION: Daily compounding without rounding to maximize returns
-// 3. BALANCE SEPARATION:
-//    - balance: Available spending money
-//    - invBalance: ROI earnings (separated until investment completion)
-// 4. INVESTMENT LIFECYCLE:
-//    - active: Earning daily ROI
-//    - completed: Capital + ROI returned to main balance
-// 5. AUDIT TRAIL: Every action creates transaction records for transparency
-// 6. ADMIN MONITORING: Separate admin transaction records for oversight
-
-// ======================
-// IMPORTANT NOTES:
-// ======================
-// 1. Line 73: UpdateOne query uses userId field (not userObjectId variable)
-// 2. ROI RATES: Very high rates (2-8% daily) - ensure sustainable business model
-// 3. SECURITY: No input sanitization shown - should be done in controller/middleware
-// 4. PERFORMANCE: processDailyROI processes all investments - consider batching for large datasets
-// 5. ERROR HANDLING: Some errors are thrown, some silently ignored - consider consistent approach
-// 6. TRANSACTION CONSISTENCY: Consider using MongoDB transactions for multi-document operations
-
-// ======================
-// TYPICAL USAGE:
-// ======================
-// 1. User creates investment via /api/invest endpoint
-// 2. Daily cron job calls processDailyROI() to credit earnings
-// 3. When investment matures, completeInvestment() is called automatically
-// 4. Users can view investment status and returns through dashboard
-
-// ======================
-// SECURITY CONSIDERATIONS:
-// ======================
-// 1. Validate all user inputs before processing
-// 2. Implement rate limiting on investment creation
-// 3. Consider maximum investment amounts per user
-// 4. Add investment withdrawal penalties/fees if needed
-// 5. Implement fraud detection for abnormal investment patterns

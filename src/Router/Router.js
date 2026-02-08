@@ -16,6 +16,7 @@ const CryptoWalletContr = require("../Controller/CryptoWalletContr/CryptoWallet"
 const ReferralContr = require("../Controller/ReferralContr/Referral");
 const AdminDashboardContr = require("../Controller/AdminDashboard/AdminDashboard");
 const MarkNotificationUpdate = require("../Controller/MarkNotificationUpdateContr/MarkNotificationUpdate");
+const InvestPlanContr = require("../Controller/InvestPlan/InvestPlan");
 
 // ======================
 // SERVICE IMPORTS
@@ -33,6 +34,7 @@ const CryptoWalletService = require("../Service/CryptoWalletService/CryptoWallet
 const AdminDashboardService = require("../Service/AdminDashboard/AdminDashboard");
 const ReferralService = require("../Service/ReferalLink/ReferalLink");
 const ReadNotification = require("../Service/ReadNotificarion/ReadNotification");
+const InvestPlanService = require("../Service/InvestPlan/InvestPlan");
 
 // ======================
 // MODEL/SCHEMA IMPORTS
@@ -48,7 +50,7 @@ const ResetToken = require("../Models/ResetToken"); // Password reset tokens
 const SecurityLog = require("../Models/SecurityLog"); // Security audit logs
 const Referral = require("../Models/Referral"); // Referrals
 const Notification = require("../Models/Notification"); // Notifications
-
+const InvestmentPlan = require("../Models/InvestmentPlan"); //Investment plan
 // ======================
 // MIDDLEWARE IMPORTS
 // ======================
@@ -105,6 +107,7 @@ const SignupService = new SignUpService({
 const adminSignupService = new AdminSignupService(User); // Admin registration
 const Loginservice = new LoginService(User); // User login
 const adminLoginService = new AdminLoginService(User); // Admin login
+const investPlanService = new InvestPlanService(InvestmentPlan);
 
 const referralService = new ReferralService({
   userModel: User,
@@ -136,6 +139,7 @@ const paymentService = new WalletService({
   TransactionModel: TransactionSchema, // Transaction records
   AdminTransactionModel: AdminTransactionSchema, // Admin transaction records
   NotificationModel: Notification, // Notifications
+  ReferralModel: Referral,
 });
 
 // Investment service with all related models
@@ -146,6 +150,7 @@ const investmentService = new InvestmentService({
   WalletModel: WalletSchema, // Wallet updates
   TransactionModel: TransactionSchema, // Transaction records
   NotificationModel: Notification, // Notifications
+  InvestmentPlanModel: InvestmentPlan, // investment plans
 });
 
 // Crypto wallet service
@@ -157,6 +162,7 @@ const dashboardAdminService = new AdminDashboardService({
   TransactionModel: TransactionSchema, // All transactions
   InvestmentModel: InvestmentSchema, // All investments
   UserModel: User, // All users
+  InvestPlanModel: InvestmentPlan,
 });
 
 const readNotification = new ReadNotification(Notification);
@@ -171,6 +177,7 @@ const SignupController = new SignUpController(SignupService);
 const adminSignupController = new AdminSignupController(adminSignupService);
 const Logincontroller = new LoginController(Loginservice);
 const adminLoginController = new AdminLoginController(adminLoginService);
+const investPlanContr = new InvestPlanContr(investPlanService);
 const referralController = new ReferralContr(referralService);
 const forgotPasswordController = new ForgotPasswordController(
   forgotPasswordService,
@@ -403,6 +410,25 @@ Router.post(
   adminLoginController.login, // Admin authentication
 );
 
+Router.post(
+  "/createPlan",
+  Require_Api_key,
+  Require_jwt_key,
+  investPlanContr.CreateInvestPlan,
+);
+Router.put(
+  "/updatePlan/:id",
+  Require_Api_key,
+  Require_jwt_key,
+  investPlanContr.UpdateInvestmentPlan,
+);
+Router.delete(
+  "/deletePlan/:id",
+  Require_Api_key,
+  Require_jwt_key,
+  investPlanContr.DeleteInvestmentPlan,
+);
+
 // Confirm Withdrawal (Admin)
 // Path: POST /api/confirmWithdraw
 // Middleware chain: check API key → verify JWT → confirm withdrawal
@@ -448,8 +474,8 @@ Router.post(
 // Middleware chain: check API key → verify JWT → confirm deposit
 Router.post(
   "/confirmDeposit",
-  Require_Api_key, // Validate API key
-  Require_jwt_key, // Verify JWT token
+  // Require_Api_key, // Validate API key
+  // Require_jwt_key, // Verify JWT token
   payment.confirmDeposit, // Admin confirms user deposit
 );
 

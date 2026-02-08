@@ -38,11 +38,11 @@ const investmentSchema = new mongoose.Schema(
     },
     investmentStatus: {
       type: String,
-      enum: ["active", "completed", "cancelled"],
-      default: "active",
+      enum: ["active", "pending", "completed", "cancelled"],
+      default: "pending",
     },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("Investment", investmentSchema);

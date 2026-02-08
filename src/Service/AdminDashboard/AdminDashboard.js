@@ -5,12 +5,19 @@
 // Provides aggregated data views for administrators to monitor platform health and user activity
 // Note: Currently has significant logical issues that need to be addressed
 class AdminDashboard {
-  constructor({ WalletModel, TransactionModel, InvestmentModel, UserModel }) {
+  constructor({
+    WalletModel,
+    TransactionModel,
+    InvestmentModel,
+    UserModel,
+    InvestPlanModel,
+  }) {
     // Initialize model dependencies for admin data aggregation
     this.WalletModel = WalletModel; // All user wallets for financial overview
     this.TransactionModel = TransactionModel; // Transaction monitoring
     this.InvestmentModel = InvestmentModel; // Investment tracking and analytics
     this.UserModel = UserModel; // User management and statistics
+    this.InvestPlanModel = InvestPlanModel; // Investment tracking and analytics
   }
 
   // ======================
@@ -76,12 +83,15 @@ class AdminDashboard {
     // WARNING: No pagination - could be performance issue with many investments
     const investments = await this.InvestmentModel.find();
 
+    const investPlan = await this.InvestPlanModel.find();
+
     // 5. RETURN AGGREGATED DATA
     return {
       users, // All users' personal information
       totalUser, // Total user count
       totalInvestment, // Total investment count
       investments, // All investment records (could be huge)
+      investPlan, // All investment plans 
     };
   }
 
@@ -117,12 +127,10 @@ class AdminDashboard {
    * Usage Example (with fixes):
    * const walletData = await adminDashboard.getAdminDashBoardWallets(adminUserId);
    */
-  async getAdminDashBoardWallets(userId) {
+  async getAdminDashBoardWallets() {
     // BUG: This only gets wallets for the admin user, not all users' wallets
     // Should be: await this.WalletModel.find() to get ALL wallets
-    const wallets = await this.WalletModel.find({ userId }).select(
-      "balance createdAt",
-    );
+    const wallets = await this.WalletModel.find()
 
     // Check if wallets found (but only checking admin's own wallets due to bug)
     if (!wallets) {
