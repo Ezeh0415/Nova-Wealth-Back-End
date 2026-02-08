@@ -299,8 +299,6 @@ Router.post(
 Router.post(
   "/invest",
   Require_Api_key, // Validate API key
-  investmentValidator, // Validate investment data
-  validate, // Run validation middleware
   Require_jwt_key, // Verify JWT token
   investmentController.invest, // Process investment
 );
