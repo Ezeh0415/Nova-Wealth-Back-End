@@ -434,6 +434,13 @@ Router.delete(
   investPlanContr.DeleteInvestmentPlan,
 );
 
+Router.post(
+  "/confirmInvest",
+  Require_Api_key, // Validate API key
+  Require_jwt_key, // Verify JWT token
+  investmentController.confirmInvestment, // Process investment
+);
+
 // Confirm Withdrawal (Admin)
 // Path: POST /api/confirmWithdraw
 // Middleware chain: check API key → verify JWT → confirm withdrawal

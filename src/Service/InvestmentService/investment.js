@@ -356,6 +356,121 @@ class InvestmentService {
     }
   }
 
+
+  // async confirmInvestment(investmentId) {
+  //   try {
+  //     // 1. FIND INVESTMENT
+  //     const investment = await this.InvestmentModel.findById(investmentId);
+  //     if (!investment) {
+  //       throw new Error("Investment not found");
+  //     }
+
+  //     // 2. CHECK STATUS
+  //     if (investment.investmentStatus !== "pending") {
+  //       throw new Error(`Investment is already ${investment.investmentStatus}`);
+  //     }
+
+  //     // 3. FIND USER'S WALLET
+  //     const wallet = await this.WalletModel.findOne({ userId: investment.userId });
+  //     if (!wallet) {
+  //       throw new Error("Wallet not found");
+  //     }
+
+  //     // 4. FIND INVESTMENT PLAN FOR DURATION
+  //     const plan = await this.InvestmentPlanModel.findOne({
+  //       planId: investment.investmentType,
+  //     });
+
+  //     if (!plan) {
+  //       throw new Error(`Investment plan "${investment.investmentType}" not found`);
+  //     }
+
+  //     // 5. MOVE FUNDS FROM PENDING TO INVESTMENT BALANCE
+  //     if (wallet.pendingInvestment < investment.amount) {
+  //       throw new Error("Insufficient pending investment balance");
+  //     }
+
+  //     wallet.pendingInvestment -= investment.amount;
+  //     wallet.invBalance = (wallet.invBalance || 0) + investment.amount;
+  //     await wallet.save();
+
+  //     console.log(
+  //       `✅ Moved ${investment.amount / 100} from pending to investment balance`,
+  //     );
+
+  //     // 6. SET ACTUAL DATES BASED ON PLAN DURATION
+  //     const actualStartDate = new Date();
+  //     const actualEndDate = new Date(actualStartDate);
+  //     actualEndDate.setDate(actualEndDate.getDate() + plan.duration);
+
+  //     // 7. UPDATE INVESTMENT
+  //     investment.investmentStartDate = actualStartDate;
+  //     investment.investmentEndDate = actualEndDate;
+  //     investment.investmentStatus = "active";
+  //     investment.lastRoiAt = actualStartDate; // Initialize ROI tracking
+  //     await investment.save();
+
+  //     // 8. UPDATE ADMIN TRANSACTION
+  //     await this.AdminTransactionModel.updateOne(
+  //       { transactionId: investment._id },
+  //       { status: "active" }
+  //     );
+
+  //     // 9. UPDATE USER TRANSACTION
+  //     await this.TransactionModel.updateOne(
+  //       {
+  //         investmentId: investment._id,
+  //         status: "pending",
+  //       },
+  //       {
+  //         status: "active",
+  //         description: `${plan.name} investment Deactivated - $${(investment.amount / 100).toFixed(2)} `,
+  //       }
+  //     );
+
+  //     // 10. SEND NOTIFICATION
+  //     await this.NotificationModel.create({
+  //       user: investment.userId,
+  //       type: "investment",
+  //       title: "Investment DeActivated! 🎉",
+  //       message: `Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} is now deactivated.`,
+  //       data: {
+  //         investmentId: investment._id,
+  //         startDate: actualStartDate,
+  //         endDate: actualEndDate,
+  //         planName: plan.name,
+  //         roi: plan.roi,
+  //       },
+  //       category: "investment",
+  //       icon: "investment",
+  //     });
+
+  //     return {
+  //       success: true,
+  //       message: "Investment cancled and Deactivated successfully",
+  //       investment: {
+  //         id: investment._id,
+  //         amount: investment.amount / 100,
+  //         investmentType: investment.investmentType,
+  //         planName: plan.name,
+  //         roi: investment.roi,
+  //         startDate: actualStartDate,
+  //         endDate: actualEndDate,
+  //         duration: plan.duration,
+  //         status: "active",
+  //       },
+  //       wallet: {
+  //         pendingInvestment: wallet.pendingInvestment / 100,
+  //         invBalance: wallet.invBalance / 100,
+  //         balance: wallet.balance / 100,
+  //       },
+  //     };
+  //   } catch (error) {
+  //     console.error("❌ Investment confirmation error:", error.message);
+  //     throw error;
+  //   }
+  // }
+
   // ======================
   // DAILY ROI PROCESSING (CRON JOB)
   // ======================

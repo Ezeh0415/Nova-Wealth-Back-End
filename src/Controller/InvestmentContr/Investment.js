@@ -5,6 +5,7 @@ class Investment {
     // bind the methods to the class
 
     this.invest = this.invest.bind(this);
+    this.confirmInvestment = this.confirmInvestment.bind(this);
     this.processDailyROI = this.processDailyROI.bind(this);
   }
 
@@ -30,6 +31,14 @@ class Investment {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  }
+
+  async confirmInvestment(req, res) {
+    const { investmentId } = req.body;
+    const investConfirm =
+      await this.InvestmentService.confirmInvestment(investmentId);
+
+    return investConfirm;
   }
 
   async processDailyROI(req, res) {
