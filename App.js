@@ -42,6 +42,7 @@ dotenv.config();
 // These are the domains that are permitted to make requests to this API
 const allowedOrigins = [
   "https://althworldf.onrender.com", // Production frontend
+  "http://localhost:5173", // Local development (Vite default)
   "http://localhost:5174", // Local development (Vite default)
   "http://localhost:5175", // Alternate local port
   "http://localhost:8080", // Local server port
@@ -62,7 +63,7 @@ const corsOptions = {
     }
   },
   credentials: true, // Allow cookies and authentication headers
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"], // Allowed HTTP methods
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Allowed HTTP methods
   allowedHeaders: ["Content-Type", "Authorization", "x-api-key"], // Allowed headers
   exposedHeaders: ["Content-Range", "X-Content-Range"], // Headers exposed to client
   maxAge: 86400, // Cache preflight requests for 24 hours
@@ -81,6 +82,7 @@ app.use((req, res, next) => {
   res.header(
     "Access-Control-Allow-Origin",
     "https://althworldf.onrender.com", // Production
+    "http://localhost:5173", // Local dev
     "http://localhost:5174", // Local dev
     "http://localhost:5175", // Alternate local
     "http://localhost:8080", // Local server
@@ -88,7 +90,7 @@ app.use((req, res, next) => {
   );
 
   res.header("Access-Control-Allow-Credentials", "true"); // Allow credentials
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS"); // Allowed methods
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS"); // Allowed methods
   res.header(
     "Access-Control-Allow-Headers",
     "Origin, X-Requested-With, Content-Type, Accept, Authorization, x-api-key", // Allowed headers
