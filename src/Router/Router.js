@@ -437,7 +437,6 @@ Router.delete(
 Router.get(
   "/confirmInvest/:id",
   Require_Api_key, // Validate API key
-  Require_jwt_key, // Verify JWT token
   investmentController.confirmInvestment, // Process investment
 );
 
