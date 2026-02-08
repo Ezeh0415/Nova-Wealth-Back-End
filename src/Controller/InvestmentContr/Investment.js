@@ -34,7 +34,7 @@ class Investment {
   }
 
   async confirmInvestment(req, res) {
-    const { investmentId } = req.body;
+    const { investmentId } = req.params;
     const investConfirm =
       await this.InvestmentService.confirmInvestment(investmentId);
 
