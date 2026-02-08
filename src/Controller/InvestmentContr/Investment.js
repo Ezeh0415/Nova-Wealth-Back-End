@@ -9,25 +9,12 @@ class Investment {
   }
 
   async invest(req, res) {
-    const {
-      amount,
-      roi,
-      investmentType,
-      investmentStartDate,
-      investmentEndDate,
-    } = req.body;
+    const { amount, investmentType } = req.body;
 
     const userId = req.user.id;
 
     try {
-      if (
-        !userId ||
-        !amount ||
-        !roi ||
-        !investmentType ||
-        !investmentStartDate ||
-        !investmentEndDate
-      ) {
+      if (!userId || !amount || !investmentType) {
         return res
           .status(400)
           .json({ message: "Please provide all required fields" });
@@ -36,10 +23,7 @@ class Investment {
       const investment = await this.InvestmentService.invest(
         userId,
         amount,
-        roi,
         investmentType,
-        investmentStartDate,
-        investmentEndDate,
       );
 
       return res.status(200).json(investment);
