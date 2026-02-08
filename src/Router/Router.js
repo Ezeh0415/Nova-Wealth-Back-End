@@ -130,6 +130,7 @@ const dashboardService = new DashBoardService({
   InvestmentModel: InvestmentSchema, // User investments
   UserModel: User, // User information
   NotificationModel: Notification, // Notifications
+  InvestPlanModel: InvestmentPlan, // Investment plans
 });
 
 // Payment/transaction service
@@ -252,6 +253,12 @@ Router.get(
   Require_Api_key, // Validate API key
   Require_jwt_key, // Verify JWT token (user authentication)
   DashBoardController.getDashboard, // Fetch user dashboard data
+);
+
+Router.get(
+  "/investPlan",
+  Require_Api_key, // Verify JWT token (user authentication)
+  DashBoardController.getInvestPlan, // Fetch user dashboard data
 );
 
 // User referral link creation

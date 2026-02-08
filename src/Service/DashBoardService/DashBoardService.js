@@ -11,6 +11,7 @@ class DashboardService {
     InvestmentModel,
     UserModel,
     NotificationModel,
+    InvestPlanModel,
   }) {
     // Initialize model dependencies for data retrieval
     this.WalletModel = WalletModel; // User wallet/balance information
@@ -18,6 +19,7 @@ class DashboardService {
     this.InvestmentModel = InvestmentModel; // Investment records
     this.UserModel = UserModel; // User account information
     this.NotificationModel = NotificationModel; // User notifications
+    this.InvestPlanModel = InvestPlanModel;
   }
 
   // ======================
@@ -107,6 +109,15 @@ class DashboardService {
       Notification,
       accountStatus: user, // User verification status
     };
+  }
+
+  async getInvestPlan() {
+    const investPlan = await this.InvestPlanModel.find();
+    if (!investPlan) {
+      throw new Error("error getting investment plans");
+    }
+
+    return investPlan;
   }
 
   // ================================================================
