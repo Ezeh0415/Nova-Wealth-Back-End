@@ -1,0 +1,74 @@
+services:
+  # Node.js Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: althworld-backend
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      # Add your other environment variables here
+      # - MONGODB_URI=
+      # - JWT_SECRET=
+      # - etc.
+    ports:
+      - "8080:8080"
+    networks:
+      - althworld-network
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:8080/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    # Uncomment to mount your .env file
+    # volumes:
+    #   - ./.env:/app/.env:ro
+
+  # Nginx Reverse Proxy Service
+  nginx:
+    image: nginx:alpine
+    container_name: althworld-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Uncomment to use SSL certificates
+      # - ./certs:/etc/nginx/certs:ro
+    networks:
+      - althworld-network
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  # MongoDB Database Service (Optional - uncomment if needed)
+  # mongodb:
+  #   image: mongo:7.0
+  #   container_name: althworld-mongodb
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=admin
+  #     - MONGO_INITDB_ROOT_PASSWORD=password
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongodb_data:/data/db
+  #   networks:
+  #     - althworld-network
+  #   restart: unless-stopped
+
+networks:
+  althworld-network:
+    driver: bridge
+
+# volumes:
+#   mongodb_data:
+#     driver: local
