@@ -1,3 +1,4 @@
+const { nanoid } = require("nanoid");
 const transporter = require("../../Utili/NodeMailer");
 const { welcomeTemplate } = require("../../Utili/WelcomeTamplate");
 
@@ -122,6 +123,15 @@ class SignUpService {
           { session },
         );
 
+        const uniqueCode = nanoid(10); // Generate a unique referral code
+        const newReferralCode = `${newUser.userName}-${uniqueCode}`;
+
+        const referralLinks = `${process.env.FRONTEND_URL}/signup?ref=${newReferralCode}`;
+
+        newUser.referralCode = newReferralCode;
+        newUser.referralLink = referralLinks;
+
+        await newUser.save({ session });
         // 7️⃣ Create welcome notification
         const welcomeNotification = new this.NotificationModel({
           user: newUser._id,
