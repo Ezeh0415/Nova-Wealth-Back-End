@@ -10,11 +10,13 @@ const UserSchema = new mongoose.Schema(
       type: String,
       required: true,
       unique: true,
+      sparse: true,
     },
     email: {
       type: String,
       required: true,
       unique: true,
+      sparse: true,
     },
     password: {
       type: String,
@@ -49,9 +51,13 @@ const UserSchema = new mongoose.Schema(
     },
     referralCode: {
       type: String,
+      unique: true,
+      sparse: true,
     },
     referralLink: {
       type: String,
+      unique: true,
+      sparse: true,
     },
     hasMadeFirstDeposit: {
       type: Boolean,
