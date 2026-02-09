@@ -45,7 +45,9 @@ class InvestmentService {
       });
 
       if (!plan) {
-        throw new Error(`Investment plan "${investmentType}" not found or inactive`);
+        throw new Error(
+          `Investment plan "${investmentType}" not found or inactive`,
+        );
       }
 
       return plan.roi;
@@ -68,7 +70,9 @@ class InvestmentService {
       });
 
       if (!plan) {
-        throw new Error(`Investment plan "${investmentType}" not found or inactive`);
+        throw new Error(
+          `Investment plan "${investmentType}" not found or inactive`,
+        );
       }
 
       return plan.duration;
@@ -110,16 +114,22 @@ class InvestmentService {
       });
 
       if (!plan) {
-        throw new Error(`Investment plan "${investmentType}" not found or inactive`);
+        throw new Error(
+          `Investment plan "${investmentType}" not found or inactive`,
+        );
       }
 
       // 3. CHECK AMOUNT WITHIN PLAN LIMITS
       if (amount < plan.minAmount) {
-        throw new Error(`Minimum investment for ${plan.name} is $${plan.minAmount}`);
+        throw new Error(
+          `Minimum investment for ${plan.name} is $${plan.minAmount}`,
+        );
       }
 
       if (amount > plan.maxAmount) {
-        throw new Error(`Maximum investment for ${plan.name} is $${plan.maxAmount}`);
+        throw new Error(
+          `Maximum investment for ${plan.name} is $${plan.maxAmount}`,
+        );
       }
 
       // 4. USER VERIFICATION
@@ -150,7 +160,8 @@ class InvestmentService {
 
       // 9. DEDUCT FROM BALANCE
       wallet.balance -= creditedAmountInKobo;
-      wallet.pendingInvestment = (wallet.pendingInvestment || 0) + creditedAmountInKobo;
+      wallet.pendingInvestment =
+        (wallet.pendingInvestment || 0) + creditedAmountInKobo;
       await wallet.save();
 
       // 10. CREATE INVESTMENT (WITHOUT FINAL DATES - will be set on confirmation)
@@ -211,7 +222,8 @@ class InvestmentService {
 
       return {
         success: true,
-        message: "Investment request created successfully. Awaiting confirmation.",
+        message:
+          "Investment request created successfully. Awaiting confirmation.",
         investment: {
           id: investment._id,
           amount: amount,
@@ -256,7 +268,9 @@ class InvestmentService {
       }
 
       // 3. FIND USER'S WALLET
-      const wallet = await this.WalletModel.findOne({ userId: investment.userId });
+      const wallet = await this.WalletModel.findOne({
+        userId: investment.userId,
+      });
       if (!wallet) {
         throw new Error("Wallet not found");
       }
@@ -267,7 +281,9 @@ class InvestmentService {
       });
 
       if (!plan) {
-        throw new Error(`Investment plan "${investment.investmentType}" not found`);
+        throw new Error(
+          `Investment plan "${investment.investmentType}" not found`,
+        );
       }
 
       // 5. MOVE FUNDS FROM PENDING TO INVESTMENT BALANCE
@@ -298,7 +314,7 @@ class InvestmentService {
       // 8. UPDATE ADMIN TRANSACTION
       await this.AdminTransactionModel.updateOne(
         { transactionId: investment._id },
-        { status: "active" }
+        { status: "active" },
       );
 
       // 9. UPDATE USER TRANSACTION
@@ -310,7 +326,7 @@ class InvestmentService {
         {
           status: "active",
           description: `${plan.name} investment activated - $${(investment.amount / 100).toFixed(2)} invested`,
-        }
+        },
       );
 
       // 10. SEND NOTIFICATION
@@ -355,7 +371,6 @@ class InvestmentService {
       throw error;
     }
   }
-
 
   // async confirmInvestment(investmentId) {
   //   try {
@@ -488,7 +503,9 @@ class InvestmentService {
         investmentStatus: "active",
       });
 
-      console.log(`🔄 Processing ROI for ${investments.length} active investments`);
+      console.log(
+        `🔄 Processing ROI for ${investments.length} active investments`,
+      );
 
       for (const inv of investments) {
         try {
@@ -512,7 +529,9 @@ class InvestmentService {
           });
 
           if (!plan) {
-            console.warn(`Plan not found for investment type: ${inv.investmentType}`);
+            console.warn(
+              `Plan not found for investment type: ${inv.investmentType}`,
+            );
             continue;
           }
 
@@ -528,7 +547,7 @@ class InvestmentService {
           // Update wallet investment balance
           await this.WalletModel.updateOne(
             { userId: inv.userId },
-            { $inc: { invBalance: profit } }
+            { $inc: { invBalance: profit } },
           );
 
           // Create transaction record
@@ -541,9 +560,14 @@ class InvestmentService {
             status: "completed",
           });
 
-          console.log(`💰 Credited $${profit / 100} ROI for investment ${inv._id}`);
+          console.log(
+            `💰 Credited $${profit / 100} ROI for investment ${inv._id}`,
+          );
         } catch (error) {
-          console.error(`Error processing ROI for investment ${inv._id}:`, error.message);
+          console.error(
+            `Error processing ROI for investment ${inv._id}:`,
+            error.message,
+          );
           // Continue with other investments
         }
       }
@@ -603,7 +627,9 @@ class InvestmentService {
     }
 
     // Find user's wallet
-    const wallet = await this.WalletModel.findOne({ userId: investment.userId });
+    const wallet = await this.WalletModel.findOne({
+      userId: investment.userId,
+    });
     if (!wallet) {
       throw new Error("Wallet not found");
     }
@@ -611,7 +637,8 @@ class InvestmentService {
     // Calculate total to return (capital + accumulated returns)
     const totalInvBalance = wallet.invBalance || 0;
     const capital = investment.amount || 0;
-    const returns = totalInvBalance - capital > 0 ? totalInvBalance - capital : 0;
+    const returns =
+      totalInvBalance - capital > 0 ? totalInvBalance - capital : 0;
 
     // Transfer to main balance
     wallet.balance = (wallet.balance || 0) + totalInvBalance;
@@ -627,7 +654,7 @@ class InvestmentService {
     // Update transactions
     await this.TransactionModel.updateMany(
       { investmentId: investment._id, status: "active" },
-      { status: "completed" }
+      { status: "completed" },
     );
 
     // Create admin transaction for completion
@@ -703,11 +730,15 @@ class InvestmentService {
     }
 
     if (investment.investmentStatus !== "pending") {
-      throw new Error(`Cannot cancel ${investment.investmentStatus} investment`);
+      throw new Error(
+        `Cannot cancel ${investment.investmentStatus} investment`,
+      );
     }
 
     // Refund to wallet
-    const wallet = await this.WalletModel.findOne({ userId: investment.userId });
+    const wallet = await this.WalletModel.findOne({
+      userId: investment.userId,
+    });
     if (wallet) {
       wallet.balance += investment.amount;
       wallet.pendingInvestment -= investment.amount;
@@ -722,7 +753,7 @@ class InvestmentService {
     // Update transactions
     await this.TransactionModel.updateMany(
       { investmentId: investment._id },
-      { status: "cancelled" }
+      { status: "cancelled" },
     );
 
     // Send notification

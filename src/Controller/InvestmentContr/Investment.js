@@ -34,11 +34,15 @@ class Investment {
   }
 
   async confirmInvestment(req, res) {
-    const { investmentId } = req.params;
-    const investConfirm =
-      await this.InvestmentService.confirmInvestment(investmentId);
+    try {
+      const { investmentId } = req.body;
+      const investConfirm =
+        await this.InvestmentService.confirmInvestment(investmentId);
 
-    return investConfirm;
+      return res.status(200).json(investConfirm);
+    } catch (err) {
+      res.status.json({ error: err.message });
+    }
   }
 
   async processDailyROI(req, res) {

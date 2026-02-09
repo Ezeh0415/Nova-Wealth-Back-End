@@ -434,8 +434,8 @@ Router.delete(
   investPlanContr.DeleteInvestmentPlan,
 );
 
-Router.get(
-  "/confirmInvest/:id",
+Router.put(
+  "/confirmInvest",
   Require_Api_key, // Validate API key
   investmentController.confirmInvestment, // Process investment
 );
