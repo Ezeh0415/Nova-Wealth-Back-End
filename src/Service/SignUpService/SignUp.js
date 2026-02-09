@@ -1,4 +1,4 @@
-const { transporter } = require("../../Utili/NodeMailer");
+const transporter = require("../../Utili/NodeMailer");
 const { welcomeTemplate } = require("../../Utili/WelcomeTamplate");
 
 class SignUpService {
