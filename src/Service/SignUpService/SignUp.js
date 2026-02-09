@@ -1,3 +1,6 @@
+const { transporter } = require("../../Utili/NodeMailer");
+const { welcomeTemplate } = require("../../Utili/WelcomeTamplate");
+
 class SignUpService {
   constructor({
     UserModel,
@@ -130,7 +133,20 @@ class SignUpService {
         });
         await welcomeNotification.save({ session });
 
-        // 8️⃣ Return sanitized data
+        // 8️⃣. SEND RESET EMAIL
+        const link = `${process.env.FRONTEND_URL}/login`;
+        try {
+          await transporter.sendMail({
+            from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
+            to: newUser.email,
+            subject: `welcome to AlthWorld Global ${newUser.userName}`,
+            html: welcomeTemplate(newUser.fullName, link), // Uses email template with reset button
+          });
+        } catch (err) {
+          throw new Error("Failed to send OTP email");
+        }
+
+        // 9 Return sanitized data
         return {
           id: newUser._id,
           fullName: newUser.fullName,

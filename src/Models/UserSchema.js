@@ -49,13 +49,9 @@ const UserSchema = new mongoose.Schema(
     },
     referralCode: {
       type: String,
-      unique: true,
-      sparse: true,
     },
     referralLink: {
       type: String,
-      unique: true,
-      sparse: true,
     },
     hasMadeFirstDeposit: {
       type: Boolean,
