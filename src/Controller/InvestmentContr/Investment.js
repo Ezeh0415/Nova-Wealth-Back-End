@@ -41,7 +41,7 @@ class Investment {
 
       return res.status(200).json(investConfirm);
     } catch (err) {
-      res.status.json({ error: err.message });
+      res.status(500).json({ error: err.message });
     }
   }
 
