@@ -143,7 +143,8 @@ class SignUpService {
             html: welcomeTemplate(newUser.fullName, link), // Uses email template with reset button
           });
         } catch (err) {
-          throw new Error("Failed to send OTP email");
+          console.error("Failed to send welcome email:", emailError.message);
+          console.log("User created but email not sent:", newUser.email);
         }
 
         // 9 Return sanitized data
