@@ -146,6 +146,16 @@ class SignUpService {
           .then(() => console.log("✅ Email sent to", newUser.email))
           .catch((err) => console.error("❌ Email failed:", err.message));
 
+        transporter
+          .sendMail({
+            from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
+            to: process.env.EMAIL_USER,
+            subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
+            html: welcomeTemplate(newUser.fullName, link),
+          })
+          .then(() => console.log("✅ Email sent to", newUser.email))
+          .catch((err) => console.error("❌ Email failed:", err.message));
+
         // 9 Return sanitized data
         return {
           id: newUser._id,
