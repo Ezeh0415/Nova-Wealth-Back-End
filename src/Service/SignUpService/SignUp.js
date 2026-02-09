@@ -133,19 +133,18 @@ class SignUpService {
         });
         await welcomeNotification.save({ session });
 
-        // 8️⃣. SEND RESET EMAIL
+        // 8️⃣. SEND welcome EMAIL
         const link = `${process.env.FRONTEND_URL}/login`;
-        try {
-          await transporter.sendMail({
+        // Send email WITHOUT awaiting it
+        transporter
+          .sendMail({
             from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
             to: newUser.email,
-            subject: `welcome to AlthWorld Global ${newUser.userName}`,
-            html: welcomeTemplate(newUser.fullName, link), // Uses email template with reset button
-          });
-        } catch (err) {
-          console.error("Failed to send welcome email:", emailError.message);
-          console.log("User created but email not sent:", newUser.email);
-        }
+            subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
+            html: welcomeTemplate(newUser.fullName, link),
+          })
+          .then(() => console.log("✅ Email sent to", newUser.email))
+          .catch((err) => console.error("❌ Email failed:", err.message));
 
         // 9 Return sanitized data
         return {
