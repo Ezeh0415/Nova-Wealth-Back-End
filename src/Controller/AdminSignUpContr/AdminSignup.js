@@ -69,6 +69,7 @@ class SignUpController {
       const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
       return res.status(201).json({
+        success: true,
         message: "User created successfully",
         data: safeUser,
         accessToken,
