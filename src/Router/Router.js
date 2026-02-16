@@ -17,6 +17,7 @@ const ReferralContr = require("../Controller/ReferralContr/Referral");
 const AdminDashboardContr = require("../Controller/AdminDashboard/AdminDashboard");
 const MarkNotificationUpdate = require("../Controller/MarkNotificationUpdateContr/MarkNotificationUpdate");
 const InvestPlanContr = require("../Controller/InvestPlan/InvestPlan");
+const AdminUserUpdateContr = require("../Controller/AdminUserUpdateController/AdminUserUpdateContr");
 
 // ======================
 // SERVICE IMPORTS
@@ -35,6 +36,7 @@ const AdminDashboardService = require("../Service/AdminDashboard/AdminDashboard"
 const ReferralService = require("../Service/ReferalLink/ReferalLink");
 const ReadNotification = require("../Service/ReadNotificarion/ReadNotification");
 const InvestPlanService = require("../Service/InvestPlan/InvestPlan");
+const AdminUserUpdateService = require("../Service/AdminUserUpdateService/AdminUserUpdateService");
 
 // ======================
 // MODEL/SCHEMA IMPORTS
@@ -167,6 +169,10 @@ const dashboardAdminService = new AdminDashboardService({
 });
 
 const readNotification = new ReadNotification(Notification);
+const adminUserUpdateService = new AdminUserUpdateService({
+  userModel: User,
+  WalletModel: WalletSchema,
+});
 
 // ======================
 // CONTROLLER INSTANTIATION
@@ -189,6 +195,7 @@ const investmentController = new InvestmentContr(investmentService);
 const cryptoWalletController = new CryptoWalletContr(cryptoWalletService);
 const DashBoardAdminController = new AdminDashboardContr(dashboardAdminService);
 const markNotificationUpdate = new MarkNotificationUpdate(readNotification);
+const adminUserUpdateContr = new AdminUserUpdateContr(adminUserUpdateService);
 
 // const MarkAsRead = require("../Controller/MarkAsReadContr/MarkAsReadContr");
 // const MarkNotificationAsReadService = require("../Service/markNotificationAsRead/markNotificationAsReadService");
@@ -276,8 +283,6 @@ Router.post(
 // Middleware chain: validate payment data → check API key → verify JWT → process deposit
 Router.post(
   "/payment",
-  paymentValidator, // Validate payment information
-  validate, // Run validation middleware
   Require_Api_key, // Validate API key
   Require_jwt_key, // Verify JWT token
   payment.requestDeposit, // Process deposit request
@@ -500,6 +505,20 @@ Router.post(
   Require_Api_key, // Validate API key
   Require_jwt_key, // Verify JWT token
   payment.cancleDeposit, // Admin cancels deposit
+);
+
+Router.post(
+  "/getAdminUser",
+  Require_Api_key, // Validate API key
+  Require_jwt_key,
+  adminUserUpdateContr.getAdminUser,
+);
+
+Router.put(
+  "/updateFile",
+  Require_Api_key, // Validate API key
+  Require_jwt_key,
+  adminUserUpdateContr.updateAdminUser,
 );
 
 // ======================

@@ -36,6 +36,10 @@ const investmentSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    description: {
+      type: String,
+      default: "",
+    },
     investmentStatus: {
       type: String,
       enum: ["active", "pending", "completed", "cancelled"],
