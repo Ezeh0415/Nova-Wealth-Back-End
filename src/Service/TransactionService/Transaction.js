@@ -48,8 +48,6 @@ class WalletService {
    */
   async requestDeposit(userId, amount, currency) {
     try {
-
-      
       // 1. VALIDATION - Input parameter validation
       if (!userId) throw new Error("User ID is required");
 
@@ -83,17 +81,17 @@ class WalletService {
       // }
 
       // 3. PENDING CHECK - Prevent multiple pending deposits
-      const existingPending = await this.TransactionModel.findOne({
-        userId: userObjectId,
-        type: "deposit",
-        status: "pending",
-      });
+      // const existingPending = await this.TransactionModel.findOne({
+      //   userId: userObjectId,
+      //   type: "deposit",
+      //   status: "pending",
+      // });
 
-      // FIXED: This should check if pending deposit EXISTS
-      if (existingPending) {
-        // CHANGED: From !existingPending to existingPending
-        throw new Error("User already has a pending deposit request");
-      }
+      // // FIXED: This should check if pending deposit EXISTS
+      // if (existingPending) {
+      //   // CHANGED: From !existingPending to existingPending
+      //   throw new Error("User already has a pending deposit request");
+      // }
 
       // 4. WALLET MANAGEMENT - Find or create user wallet
       let wallet = await this.WalletModel.findOne({ userId: userObjectId });
@@ -503,8 +501,6 @@ class WalletService {
       const MIN_DEPOSIT_FOR_BONUS = 5000; // 50 USD in cents
 
       if (depositAmount < MIN_DEPOSIT_FOR_BONUS) {
-        
-
         // Update referral status but DON'T give bonus
         referral.status = "eligible";
         referral.referredUserDeposited = true;
@@ -538,7 +534,6 @@ class WalletService {
       referral.bonusDistributedAt = new Date();
       await referral.save();
 
-
       // STEP 5: Find referrer's wallet
       const referrerWallet = await this.WalletModel.findOne({
         userId: referral.referrer,
@@ -549,38 +544,36 @@ class WalletService {
       }
 
       // STEP 6: Add bonus to referrer's wallet
-      referrerWallet.balance += BONUS_AMOUNT;
+      referrerWallet.refBonus += BONUS_AMOUNT;
       await referrerWallet.save();
 
       // STEP 7: Create transaction record for the bonus
-      await this.TransactionModel.create({
-        userId: referral.referrer,
-        type: "profit",
-        creditedAmount: BONUS_AMOUNT,
-        status: "completed",
-        description: `Referral bonus from ${referredUser.userName}'s first deposit`,
-        initiatedAt: new Date(),
-      });
+      // await this.TransactionModel.create({
+      //   userId: referral.referrer,
+      //   type: "profit",
+      //   creditedAmount: BONUS_AMOUNT,
+      //   status: "completed",
+      //   description: `Referral bonus from ${referredUser.userName}'s first deposit`,
+      //   initiatedAt: new Date(),
+      // });
 
+      // // STEP 8: Send notification to referrer
+      // await this.NotificationModel.create({
+      //   user: referral.referrer,
+      //   type: "referral",
+      //   title: "🎉 Referral Bonus Awarded!",
+      //   message: `You received $${(BONUS_AMOUNT / 100).toFixed(2)} bonus from ${referredUser.userName}'s first deposit of $${(depositAmount / 100).toFixed(2)}!`,
+      //   category: "referral",
+      // });
 
-      // STEP 8: Send notification to referrer
-      await this.NotificationModel.create({
-        user: referral.referrer,
-        type: "referral",
-        title: "🎉 Referral Bonus Awarded!",
-        message: `You received $${(BONUS_AMOUNT / 100).toFixed(2)} bonus from ${referredUser.userName}'s first deposit of $${(depositAmount / 100).toFixed(2)}!`,
-        category: "referral",
-      });
-
-      // STEP 9: Send notification to referred user
-      await this.NotificationModel.create({
-        user: referredUser._id,
-        type: "referral",
-        title: "Referral Bonus Unlocked!",
-        message: `Your referrer has received a $${(BONUS_AMOUNT / 100).toFixed(2)} bonus thanks to your first deposit.`,
-        category: "referral",
-      });
-
+      // // STEP 9: Send notification to referred user
+      // await this.NotificationModel.create({
+      //   user: referredUser._id,
+      //   type: "referral",
+      //   title: "Referral Bonus Unlocked!",
+      //   message: `Your referrer has received a $${(BONUS_AMOUNT / 100).toFixed(2)} bonus thanks to your first deposit.`,
+      //   category: "referral",
+      // });
 
       return {
         bonusAwarded: true,

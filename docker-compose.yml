@@ -4,14 +4,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: development
     container_name: althworld-backend
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=8080
-      # Add your other environment variables here
-      # - MONGODB_URI=
-      # - JWT_SECRET=
-      # - etc.
     ports:
       - "8080:8080"
     networks:
@@ -29,9 +26,11 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    # Uncomment to mount your .env file
-    # volumes:
-    #   - ./.env:/app/.env:ro
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./.env:/app/.env:ro
+    command: nodemon -L App.js
 
   # Nginx Reverse Proxy Service
   nginx:
@@ -42,33 +41,13 @@ services:
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      # Uncomment to use SSL certificates
-      # - ./certs:/etc/nginx/certs:ro
     networks:
       - althworld-network
     depends_on:
       - app
     restart: unless-stopped
 
-  # MongoDB Database Service (Optional - uncomment if needed)
-  # mongodb:
-  #   image: mongo:7.0
-  #   container_name: althworld-mongodb
-  #   environment:
-  #     - MONGO_INITDB_ROOT_USERNAME=admin
-  #     - MONGO_INITDB_ROOT_PASSWORD=password
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongodb_data:/data/db
-  #   networks:
-  #     - althworld-network
-  #   restart: unless-stopped
-
 networks:
   althworld-network:
     driver: bridge
 
-# volumes:
-#   mongodb_data:
-#     driver: local

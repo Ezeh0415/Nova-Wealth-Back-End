@@ -12,14 +12,15 @@ class Payment {
   }
 
   async requestDeposit(req, res) {
-    const { amount, paymentType } = req.body;
+    const { userId, amount, paymentType } = req.body;
+    console.log(req.body);
 
     if (!amount) {
       return res.status(400).json({ message: "Amount is required" });
     }
 
     const currency = paymentType;
-    const userId = req.user.id;
+    // const userId = req.user.id;
 
     try {
       const data = await this.Transaction.requestDeposit(

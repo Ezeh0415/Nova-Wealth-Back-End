@@ -283,8 +283,6 @@ Router.post(
 // Middleware chain: validate payment data → check API key → verify JWT → process deposit
 Router.post(
   "/payment",
-  paymentValidator, // Validate payment information
-  validate, // Run validation middleware
   Require_Api_key, // Validate API key
   Require_jwt_key, // Verify JWT token
   payment.requestDeposit, // Process deposit request
@@ -516,10 +514,10 @@ Router.post(
   adminUserUpdateContr.getAdminUser,
 );
 
-Router.post(
+Router.put(
   "/updateFile",
-  Require_Api_key, // Validate API key
-  Require_jwt_key,
+  // Require_Api_key, // Validate API key
+  // Require_jwt_key,
   adminUserUpdateContr.updateAdminUser,
 );
 

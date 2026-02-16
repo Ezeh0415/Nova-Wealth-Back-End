@@ -31,15 +31,17 @@ class AdminUserUpdateServices {
       throw new Error("User id is required");
     }
     try {
-      const user = await this.userModel.findByIdAndUpdate(userId, updatedUser, {
-        new: true,
-      });
+      const user = await this.WalletModel.findOneAndUpdate(
+        { userId: userId },
+        { $set: updatedUser },
+        { new: true, runValidators: true },
+      );
       if (!user) {
         throw new Error("User not found");
       }
       return user;
     } catch (error) {
-      throw new Error("Error updating user");
+      throw new Error("Error updating user service");
     }
   }
 }

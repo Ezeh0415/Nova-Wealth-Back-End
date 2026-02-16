@@ -25,6 +25,7 @@ const investmentSchema = new mongoose.Schema(
     },
     investmentType: {
       type: String,
+      enum: ["basic", "standard", "premium", "ultimate"],
       required: true,
     },
     investmentStartDate: {
@@ -34,6 +35,10 @@ const investmentSchema = new mongoose.Schema(
     investmentEndDate: {
       type: Date,
       default: Date.now,
+    },
+    description: {
+      type: String,
+      default: "",
     },
     investmentStatus: {
       type: String,

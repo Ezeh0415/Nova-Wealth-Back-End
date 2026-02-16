@@ -9,8 +9,18 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install --production
 
-# Stage 2: Production stage
-FROM node:18-alpine
+# Stage 2: Development stage
+FROM node:20-alpine AS development
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+RUN npm install -g nodemon
+COPY . .
+EXPOSE 8080
+CMD ["nodemon", "-L", "App.js"]
+
+# Stage 3: Production stage
+FROM node:20-alpine AS production
 
 WORKDIR /app
 
