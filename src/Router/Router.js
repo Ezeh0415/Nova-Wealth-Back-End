@@ -509,15 +509,15 @@ Router.post(
 
 Router.post(
   "/getAdminUser",
-  // Require_Api_key, // Validate API key
-  // Require_jwt_key,
+  Require_Api_key, // Validate API key
+  Require_jwt_key,
   adminUserUpdateContr.getAdminUser,
 );
 
 Router.put(
   "/updateFile",
-  // Require_Api_key, // Validate API key
-  // Require_jwt_key,
+  Require_Api_key, // Validate API key
+  Require_jwt_key,
   adminUserUpdateContr.updateAdminUser,
 );
 
