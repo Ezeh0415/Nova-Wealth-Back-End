@@ -21,8 +21,8 @@ class KeyController {
         result,
       });
     } catch (error) {
-      console.error(err);
-      return res.status(500).json({ message: err.message });
+      console.error(error.message);
+      return res.status(500).json({ message: error.message });
     }
   }
 

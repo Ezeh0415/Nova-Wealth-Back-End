@@ -541,8 +541,8 @@ Router.put(
 
 Router.post(
   "/confirmKyc",
-  Require_Api_key, // Validate API key
-  Require_jwt_key, // Verify JWT token
+  // Require_Api_key, // Validate API key
+  // Require_jwt_key, // Verify JWT token
   kycContr.ConfirmKyc,
 );
 Router.post(
