@@ -77,7 +77,7 @@ const UserSchema = new mongoose.Schema(
     },
 
     softDelete: {
-      type: string,
+      type: String,
       default: false,
     },
   },
