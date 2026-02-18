@@ -93,7 +93,7 @@ class DashboardService {
 
     // 5. ACCOUNT STATUS - User verification information
     // Fetch minimal user data for account status display
-    const user = await this.UserModel.findById(userId).select("referralLink");
+    const user = await this.UserModel.findById(userId).select("referralLink","KycStatus");
 
     const Notification = await this.NotificationModel.find({
       user: userId,

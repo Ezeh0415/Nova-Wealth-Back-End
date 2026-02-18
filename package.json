@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/Ezeh0415/AlthWorldBackend#readme",
   "dependencies": {
+    "@complycube/api": "^1.1.13",
     "axios": "^1.13.4",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",

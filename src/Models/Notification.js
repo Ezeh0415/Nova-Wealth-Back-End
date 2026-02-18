@@ -25,6 +25,7 @@ const notificationSchema = new mongoose.Schema(
         "promotion", // Promotions
         "account", // Account updates
         "signup", // Signup confirmation
+        "kyc", // KYC status
       ],
       required: true,
     },
@@ -69,6 +70,7 @@ const notificationSchema = new mongoose.Schema(
         "promotion", // Promotions
         "account", // Account updates
         "signup", // Signup confirmation
+        "kyc", // KYC status
       ],
       default: "system",
     },
