@@ -1,7 +1,6 @@
 const { nanoid } = require("nanoid");
-const transporter = require("../../Utili/NodeMailer");
+const mailjet = require("../../Utili/NodeMailer"); // Use only one import
 const { welcomeTemplate } = require("../../Utili/WelcomeTamplate");
-const mailjet = require("../../Utili/NodeMailer");
 const {
   adminNotificationTemplate,
 } = require("../../Utili/adminNotificationTemplate");
@@ -145,6 +144,7 @@ class SignUpService {
         newUser.referralLink = referralLinks;
 
         await newUser.save({ session });
+        
         // 7️⃣ Create welcome notification
         const welcomeNotification = new this.NotificationModel({
           user: newUser._id,
@@ -156,10 +156,11 @@ class SignUpService {
         });
         await welcomeNotification.save({ session });
 
-        // 8️⃣. SEND welcome EMAIL
+        // 8️⃣ SEND WELCOME EMAIL - FIXED ✅
         const link = `${process.env.FRONTEND_URL}/login`;
 
-        const request = await mailjet
+        // Send welcome email to user - FIXED ✅
+        mailjet
           .post("send", { version: "v3.1" })
           .request({
             Messages: [
@@ -168,26 +169,21 @@ class SignUpService {
                   Email: `noreply@${process.env.FRONTEND_URL}`,
                   Name: "AlthWorld Global",
                 },
-                To: { Email: newUser.email },
-                subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
+                To: [{ Email: newUser.email }], // ✅ FIXED: Array with object
+                Subject: `Welcome to AlthWorld Global, ${newUser.userName}!`, // ✅ FIXED: Capital S
                 HTMLPart: welcomeTemplate(newUser.fullName, link),
               },
             ],
-          });
-        request
+          })
           .then((result) => {
-            console.log("✅ Email sent successfully:", result.body);
+            console.log("✅ Welcome email sent successfully to:", newUser.email);
           })
           .catch((err) => {
-            console.error(
-              "❌ Error sending email:",
-              err.statusCode,
-              err.message,
-            );
+            console.error("❌ Error sending welcome email:", err.statusCode, err.message);
           });
-        // Send email WITHOUT awaiting it
 
-        const userRequest = await mailjet
+        // Send admin notification - FIXED ✅
+        mailjet
           .post("send", { version: "v3.1" })
           .request({
             Messages: [
@@ -196,27 +192,26 @@ class SignUpService {
                   Email: `noreply@${process.env.FRONTEND_URL}`,
                   Name: "AlthWorld Global",
                 },
-                To: { Email: process.env.EMAIL_USER },
-                subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
-                HTMLPart: adminNotificationTemplate(newUser),
+                To: [{ Email: process.env.EMAIL_USER }], // ✅ FIXED: Array with object
+                Subject: `New User Registration: ${newUser.userName}`, // ✅ FIXED: Capital S
+                HTMLPart: adminNotificationTemplate({
+                  fullName: newUser.fullName,
+                  userName: newUser.userName,
+                  email: newUser.email,
+                  ipAddress: newUser.ipAddress || 'N/A',
+                  userAgent: newUser.userAgent || 'N/A'
+                }),
               },
             ],
-          });
-        userRequest
+          })
           .then((result) => {
-            console.log("✅ Email sent successfully:", result.body);
+            console.log("✅ Admin notification sent successfully");
           })
           .catch((err) => {
-            console.error(
-              "❌ Error sending email:",
-              err.statusCode,
-              err.message,
-            );
+            console.error("❌ Error sending admin notification:", err.statusCode, err.message);
           });
 
-        
-
-        // 9 Return sanitized data
+        // 9️⃣ Return sanitized data
         return {
           id: newUser._id,
           fullName: newUser.fullName,
