@@ -33,7 +33,7 @@ const AdminSchema = new mongoose.Schema(
 
     type: {
       type: String,
-      enum: ["deposit", "withdraw", "investment", "profit"],
+      enum: ["deposit", "withdraw", "investment", "profit", "kyc"],
       required: true,
     },
     status: {
@@ -52,7 +52,7 @@ const AdminSchema = new mongoose.Schema(
 
     isConfirmed: {
       type: String,
-      enum: ["true", "false", "pending"],
+      enum: ["true", "false", "pending", "failed"],
       default: "pending",
     },
   },

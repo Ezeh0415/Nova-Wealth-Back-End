@@ -70,6 +70,11 @@ const UserSchema = new mongoose.Schema(
     firstDepositDate: {
       type: Date,
     },
+    KycStatus: {
+      type: String,
+      enum: ["unverified", "verified", "pending"],
+      default: "unverified",
+    },
   },
   { timestamps: true },
 );

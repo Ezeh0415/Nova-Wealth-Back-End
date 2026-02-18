@@ -18,6 +18,7 @@ const AdminDashboardContr = require("../Controller/AdminDashboard/AdminDashboard
 const MarkNotificationUpdate = require("../Controller/MarkNotificationUpdateContr/MarkNotificationUpdate");
 const InvestPlanContr = require("../Controller/InvestPlan/InvestPlan");
 const AdminUserUpdateContr = require("../Controller/AdminUserUpdateController/AdminUserUpdateContr");
+const KycContr = require("../Controller/KycModelController/KycController");
 
 // ======================
 // SERVICE IMPORTS
@@ -37,6 +38,7 @@ const ReferralService = require("../Service/ReferalLink/ReferalLink");
 const ReadNotification = require("../Service/ReadNotificarion/ReadNotification");
 const InvestPlanService = require("../Service/InvestPlan/InvestPlan");
 const AdminUserUpdateService = require("../Service/AdminUserUpdateService/AdminUserUpdateService");
+const KycService = require("../Service/KycModelService/KycService");
 
 // ======================
 // MODEL/SCHEMA IMPORTS
@@ -53,6 +55,7 @@ const SecurityLog = require("../Models/SecurityLog"); // Security audit logs
 const Referral = require("../Models/Referral"); // Referrals
 const Notification = require("../Models/Notification"); // Notifications
 const InvestmentPlan = require("../Models/InvestmentPlan"); //Investment plan
+const KycSchema = require("../Models/KycSchema");
 // ======================
 // MIDDLEWARE IMPORTS
 // ======================
@@ -174,6 +177,13 @@ const adminUserUpdateService = new AdminUserUpdateService({
   WalletModel: WalletSchema,
 });
 
+const kycService = new KycService({
+  userModel: User,
+  kycModel: KycSchema,
+  AdminTransactionModel: AdminTransactionSchema,
+  NotificationModel: Notification,
+});
+
 // ======================
 // CONTROLLER INSTANTIATION
 // ======================
@@ -196,6 +206,7 @@ const cryptoWalletController = new CryptoWalletContr(cryptoWalletService);
 const DashBoardAdminController = new AdminDashboardContr(dashboardAdminService);
 const markNotificationUpdate = new MarkNotificationUpdate(readNotification);
 const adminUserUpdateContr = new AdminUserUpdateContr(adminUserUpdateService);
+const kycContr = new KycContr(kycService);
 
 // const MarkAsRead = require("../Controller/MarkAsReadContr/MarkAsReadContr");
 // const MarkNotificationAsReadService = require("../Service/markNotificationAsRead/markNotificationAsReadService");
@@ -364,6 +375,13 @@ Router.get(
   cryptoWalletController.getCryptoWallet, // Fetch user's crypto wallets
 );
 
+Router.post(
+  "/VerifyKyc",
+  Require_Api_key, // Validate API key
+  Require_jwt_key, // Verify JWT token
+  kycContr.verifyKyc,
+);
+
 // ======================
 // ADMIN ROUTES (Admin Authentication Required)
 // ======================
@@ -519,6 +537,19 @@ Router.put(
   Require_Api_key, // Validate API key
   Require_jwt_key,
   adminUserUpdateContr.updateAdminUser,
+);
+
+Router.post(
+  "/confirmKyc",
+  Require_Api_key, // Validate API key
+  Require_jwt_key, // Verify JWT token
+  kycContr.ConfirmKyc,
+);
+Router.post(
+  "/cancleKyc",
+  Require_Api_key, // Validate API key
+  Require_jwt_key, // Verify JWT token
+  kycContr.CancleKyc,
 );
 
 // ======================

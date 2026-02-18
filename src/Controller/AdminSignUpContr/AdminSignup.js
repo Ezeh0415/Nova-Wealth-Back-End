@@ -51,6 +51,9 @@ class SignUpController {
         email,
         password: hashedPassword,
         role: "admin",
+        KycStatus: "verified",
+        referralCode: "admin",
+        referralLink: "admin",
       });
 
       // 5️⃣ Generate tokens
