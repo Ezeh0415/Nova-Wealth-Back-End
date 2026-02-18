@@ -40,12 +40,12 @@ class SignUpController {
 
       const accessToken = await generateAccessToken(userId);
       const refreshToken = await generateRefreshToken(userId);
-      const { password: _, refreshToken: __, ...safeUser } = user.toObject();
+      // const { password: _, refreshToken: __, ...safeUser } = user.toObject();
 
       res.status(201).json({
         success: true,
         message: "User created successfully",
-        user: safeUser,
+        user,
         accessToken,
         refreshToken,
       });
