@@ -1,4 +1,3 @@
-
 class KeyService {
   constructor({
     userModel,
@@ -11,8 +10,6 @@ class KeyService {
     this.AdminTransactionModel = AdminTransactionModel;
     this.NotificationModel = NotificationModel;
   }
-
- 
 
   async verifyKyc(userId, kycData) {
     try {
@@ -77,6 +74,7 @@ class KeyService {
       kyc.KycStatus = "verified";
       await kyc.save();
       user.KycStatus = "verified";
+      user.isActive = true;
       await user.save();
 
       const adminTransaction = await this.AdminTransactionModel.findOne({

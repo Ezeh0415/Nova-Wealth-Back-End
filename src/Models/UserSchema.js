@@ -34,7 +34,7 @@ const UserSchema = new mongoose.Schema(
     lastTokenRefresh: Date,
     isActive: {
       type: Boolean,
-      default: true,
+      default: false,
     },
     role: {
       type: String,
@@ -74,6 +74,11 @@ const UserSchema = new mongoose.Schema(
       type: String,
       enum: ["unverified", "verified", "pending"],
       default: "unverified",
+    },
+
+    softDelete: {
+      type: String,
+      default: false,
     },
   },
   { timestamps: true },
