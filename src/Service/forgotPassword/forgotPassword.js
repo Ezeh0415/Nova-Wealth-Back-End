@@ -10,7 +10,6 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken"); // Note: jwt is used but not imported in original code
 const { otpTemplate } = require("../../Utili/emailTemplates");
-const transporter = require("../../Utili/NodeMailer");
 const generateResetToken = require("../../../middlewares/GenerateResetToken");
 const {
   passwordResetSuccessTemplate,
@@ -117,16 +116,32 @@ class forgotPasswordService {
     const link = `${process.env.FRONTEND_URL}resetPassword?token=${resetToken.token}&key=${process.env.API_KEY}`;
 
     // 9. SEND RESET EMAIL
-    try {
-      await transporter.sendMail({
-        from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-        to: user.email,
-        subject: "Your secure password reset link",
-        html: otpTemplate(link), // Uses email template with reset button
+    const request = await mailjet.post("send", { version: "v3.1" }).request({
+      Messages: [
+        {
+          From: { Email: "noreply@yourdomain.com", Name: "Your App" },
+          To: { Email: "user1@gmail.com" },
+          Subject: "Your secure password reset link ",
+          HTMLPart: otpTemplate(link), // Uses email template with reset button,
+        },
+      ],
+    });
+    request
+      .then((result) => {
+        console.log("✅ Email sent successfully:", result.body);
+      })
+      .catch((err) => {
+        console.error("❌ Error sending email:", err.statusCode, err.message);
       });
-    } catch (err) {
-      throw new Error("Failed to send OTP email");
-    }
+
+       // await transporter.sendMail({
+    //   from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
+    //   to: user.email,
+    //   subject: "Your secure password reset link",
+    //   html: otpTemplate(link), // Uses email template with reset button
+    // });
+
+
 
     // 10. SECURITY LOGGING
     await this.SecurityLog.create({

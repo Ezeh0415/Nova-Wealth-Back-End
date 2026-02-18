@@ -1,6 +1,10 @@
 const { nanoid } = require("nanoid");
 const transporter = require("../../Utili/NodeMailer");
 const { welcomeTemplate } = require("../../Utili/WelcomeTamplate");
+const mailjet = require("../../Utili/NodeMailer");
+const {
+  adminNotificationTemplate,
+} = require("../../Utili/adminNotificationTemplate");
 
 class SignUpService {
   constructor({
@@ -24,8 +28,15 @@ class SignUpService {
 
     try {
       return await session.withTransaction(async () => {
-        const { fullName, userName, email, password, referralCode } = userData;
-        console.log(referralCode);
+        const {
+          fullName,
+          userName,
+          email,
+          password,
+          referralCode,
+          ipAddress,
+          userAgent,
+        } = userData;
 
         // 1️⃣ Validate fields
         if (!fullName || !userName || !email || !password) {
@@ -53,6 +64,8 @@ class SignUpService {
           userName: userName,
           email: email.toLowerCase(),
           password,
+          ipAddress,
+          userAgent,
         });
 
         // 4️⃣ Save user first to get _id
@@ -145,26 +158,63 @@ class SignUpService {
 
         // 8️⃣. SEND welcome EMAIL
         const link = `${process.env.FRONTEND_URL}/login`;
-        // Send email WITHOUT awaiting it
-        transporter
-          .sendMail({
-            from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-            to: newUser.email,
-            subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
-            html: welcomeTemplate(newUser.fullName, link),
-          })
-          .then(() => console.log("✅ Email sent to", newUser.email))
-          .catch((err) => console.error("❌ Email failed:", err.message));
 
-        transporter
-          .sendMail({
-            from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-            to: process.env.EMAIL_USER,
-            subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
-            html: welcomeTemplate(newUser.fullName, link),
+        const request = await mailjet
+          .post("send", { version: "v3.1" })
+          .request({
+            Messages: [
+              {
+                From: {
+                  Email: `noreply@${process.env.FRONTEND_URL}`,
+                  Name: "AlthWorld Global",
+                },
+                To: { Email: newUser.email },
+                subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
+                HTMLPart: welcomeTemplate(newUser.fullName, link),
+              },
+            ],
+          });
+        request
+          .then((result) => {
+            console.log("✅ Email sent successfully:", result.body);
           })
-          .then(() => console.log("✅ Email sent to", newUser.email))
-          .catch((err) => console.error("❌ Email failed:", err.message));
+          .catch((err) => {
+            console.error(
+              "❌ Error sending email:",
+              err.statusCode,
+              err.message,
+            );
+          });
+        // Send email WITHOUT awaiting it
+
+        const userRequest = await mailjet
+          .post("send", { version: "v3.1" })
+          .request({
+            Messages: [
+              {
+                From: {
+                  Email: `noreply@${process.env.FRONTEND_URL}`,
+                  Name: "AlthWorld Global",
+                },
+                To: { Email: process.env.EMAIL_USER },
+                subject: `Welcome to AlthWorld Global, ${newUser.userName}!`,
+                HTMLPart: adminNotificationTemplate(newUser),
+              },
+            ],
+          });
+        userRequest
+          .then((result) => {
+            console.log("✅ Email sent successfully:", result.body);
+          })
+          .catch((err) => {
+            console.error(
+              "❌ Error sending email:",
+              err.statusCode,
+              err.message,
+            );
+          });
+
+        
 
         // 9 Return sanitized data
         return {

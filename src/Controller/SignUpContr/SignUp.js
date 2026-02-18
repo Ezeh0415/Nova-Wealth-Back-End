@@ -32,6 +32,8 @@ class SignUpController {
         email,
         password: hashedPassword,
         referralCode: referral,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
       });
 
       const userId = await user.id;

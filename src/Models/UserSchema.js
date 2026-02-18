@@ -75,6 +75,14 @@ const UserSchema = new mongoose.Schema(
       enum: ["unverified", "verified", "pending"],
       default: "unverified",
     },
+    ipAddress: {
+      type: String,
+      required: true,
+    },
+    userAgent: {
+      type: String,
+      required: true,
+    },
 
     softDelete: {
       type: String,
