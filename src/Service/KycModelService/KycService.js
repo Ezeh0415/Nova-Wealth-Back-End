@@ -36,6 +36,12 @@ class KeyService {
         throw new Error("kyc update failed");
       }
 
+      kyc.KycStatus = "pending";
+      await kyc.save();
+
+      user.KycStatus = "pending";
+      await user.save();
+
       await this.AdminTransactionModel.create({
         userId: userId,
         transactionId: kyc._id,
