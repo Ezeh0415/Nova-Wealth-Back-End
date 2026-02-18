@@ -325,7 +325,6 @@ class InvestmentService {
         },
         {
           status: "active",
-          description: `${plan.name} investment activated - $${(investment.amount / 100).toFixed(2)} invested`,
         },
       );
 
