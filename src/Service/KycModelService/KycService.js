@@ -1,3 +1,4 @@
+const kycLink = `${process.env.FRONTEND_URL}/Kyc`;
 class KeyService {
   constructor({
     userModel,
@@ -38,22 +39,26 @@ class KeyService {
       await this.AdminTransactionModel.create({
         userId: userId,
         transactionId: kyc._id,
+        fullName: user.fullName,
+        userName: user.userName,
+        email: user.email,
         type: "kyc",
         isConfirmed: "pending",
       });
 
       await this.NotificationModel.create({
-        userId: userId,
+        user: userId,
         transactionId: kyc._id,
+        title: "kyc submitted and pending ",
         type: "kyc",
         message: "kyc is pending",
         priority: "high",
         type: "kyc",
+        path: kycLink,
         category: "kyc",
       });
 
       return {
-        user,
         kyc,
       };
     } catch (error) {
@@ -86,12 +91,14 @@ class KeyService {
       await adminTransaction.save();
 
       await this.NotificationModel.create({
-        userId: userId,
+        user: userId,
         transactionId: kyc._id,
+        title: "kyc confirmed and verified ",
         type: "kyc",
-        message: "kyc Verified",
-        priority: "medium",
+        message: "kyc verified",
+        priority: "low",
         type: "kyc",
+        path: kycLink,
         category: "kyc",
       });
       return kyc;
@@ -129,12 +136,14 @@ class KeyService {
       await adminTransaction.save();
 
       await this.NotificationModel.create({
-        userId: userId,
+        user: userId,
         transactionId: kyc._id,
+        title: "kyc invalid and unverified ",
         type: "kyc",
-        message: "kyc Failed",
+        message: "kyc failed",
         priority: "urgent",
         type: "kyc",
+        path: kycLink,
         category: "kyc",
       });
       return kyc;

@@ -95,6 +95,9 @@ class DashboardService {
     // Fetch minimal user data for account status display
     const user = await this.UserModel.findById(userId).select("referralLink KycStatus");
 
+    const users = await this.UserModel.findById(userId);
+    const { password: _, refreshToken: __, ...safeUser } = users.toObject();
+    
     const Notification = await this.NotificationModel.find({
       user: userId,
     }).sort({ createdAt: -1 });
@@ -108,6 +111,7 @@ class DashboardService {
       profits, // Calculated total profits
       Notification,
       accountStatus: user, // User verification status
+      user:safeUser,
     };
   }
 
