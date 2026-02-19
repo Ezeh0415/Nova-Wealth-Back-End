@@ -166,7 +166,7 @@ class SignUpService {
             Messages: [
               {
                 From: {
-                  Email: `noreply@${process.env.FRONTEND_URL}`,
+                  Email: `noreply@${process.env.EMAIL_USER }`,
                   Name: "AlthWorld Global",
                 },
                 To: [{ Email: newUser.email }], // ✅ FIXED: Array with object
@@ -189,7 +189,7 @@ class SignUpService {
             Messages: [
               {
                 From: {
-                  Email: `noreply@${process.env.FRONTEND_URL}`,
+                  Email: `noreply@${process.env.EMAIL_USER }`,
                   Name: "AlthWorld Global",
                 },
                 To: [{ Email: process.env.EMAIL_USER }], // ✅ FIXED: Array with object
