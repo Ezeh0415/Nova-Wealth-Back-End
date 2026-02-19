@@ -96,7 +96,8 @@ class DashboardService {
     const user = await this.UserModel.findById(userId).select("referralLink KycStatus");
 
     const users = await this.UserModel.findById(userId);
-    const { password: _, refreshToken: __, ...safeUser } = users.toObject();
+    const userObj = users.toObject();
+    const { password, refreshToken, ...safeUser } = userObj;
     
     const Notification = await this.NotificationModel.find({
       user: userId,
