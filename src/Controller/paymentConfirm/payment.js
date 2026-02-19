@@ -12,7 +12,7 @@ class Payment {
   }
 
   async requestDeposit(req, res) {
-    const { userId, amount, paymentType } = req.body;
+    const { amount, paymentType } = req.body;
     console.log(req.body);
 
     if (!amount) {
@@ -20,7 +20,7 @@ class Payment {
     }
 
     const currency = paymentType;
-    // const userId = req.user.id;
+    const userId = req.user.id;
 
     try {
       const data = await this.Transaction.requestDeposit(
