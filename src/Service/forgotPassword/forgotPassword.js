@@ -119,7 +119,7 @@ class forgotPasswordService {
     const request = await mailjet.post("send", { version: "v3.1" }).request({
       Messages: [
         {
-          From: { Email: "noreply@yourdomain.com", Name: "Your App" },
+          From: { Email: `noreply@${process.env.EMAIL_USER }`, Name: "Althworld Global" },
           To: { Email: "user1@gmail.com" },
           Subject: "Your secure password reset link ",
           HTMLPart: otpTemplate(link), // Uses email template with reset button,
