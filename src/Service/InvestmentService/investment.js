@@ -319,13 +319,8 @@ class InvestmentService {
 
       // 9. UPDATE USER TRANSACTION
       await this.TransactionModel.updateOne(
-        {
-          investmentId: investment._id,
-          status: "pending",
-        },
-        {
-          status: "active",
-        },
+        { investmentId: investment._id },
+        { status: "active" },
       );
 
       // 10. SEND NOTIFICATION
