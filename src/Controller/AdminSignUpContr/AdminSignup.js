@@ -52,8 +52,10 @@ class SignUpController {
         password: hashedPassword,
         role: "admin",
         KycStatus: "verified",
-        referralCode: "admin",
-        referralLink: "admin",
+        referralCode: email,
+        referralLink: email,
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
       });
 
       // 5️⃣ Generate tokens
