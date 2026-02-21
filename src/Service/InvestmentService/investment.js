@@ -319,7 +319,7 @@ class InvestmentService {
 
       // 9. UPDATE USER TRANSACTION
       await this.TransactionModel.updateOne(
-        { investmentId: investment._id },
+        { userId: investment.userId, },
         { status: "active" },
       );
 
