@@ -54,6 +54,8 @@ class SignUpController {
         KycStatus: "verified",
         referralCode: "admin",
         referralLink: "admin",
+        ipAddress: req.ip,
+        userAgent: req.headers["user-agent"],
       });
 
       // 5️⃣ Generate tokens
