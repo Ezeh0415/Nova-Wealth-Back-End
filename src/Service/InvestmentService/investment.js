@@ -184,7 +184,7 @@ class InvestmentService {
         creditedAmount: creditedAmountInKobo,
         description: `Investment request - ${plan.name} (${investmentType})`,
         status: "pending",
-        investmentId: investment._id,
+        transactionId: investment._id,
       });
 
       await transaction.save();
@@ -319,7 +319,7 @@ class InvestmentService {
 
       // 9. UPDATE USER TRANSACTION
       await this.TransactionModel.updateOne(
-        { userId: investment.userId, },
+        { transactionId: investment._id},
         { status: "active" },
       );
 
@@ -498,6 +498,11 @@ class InvestmentService {
       });
 
       console.log(
+        investments.length,
+        "active investments found for ROI processing",
+      );
+
+      console.log(
         `🔄 Processing ROI for ${investments.length} active investments`,
       );
 
@@ -509,7 +514,7 @@ class InvestmentService {
             continue;
           }
 
-          // Check if we've already processed ROI today
+          // // Check if we've already processed ROI today
           const lastRun = inv.lastRoiAt || inv.investmentStartDate;
           const hoursSinceLastRun = (now - lastRun) / (1000 * 60 * 60);
 
@@ -521,6 +526,8 @@ class InvestmentService {
           const plan = await this.InvestmentPlanModel.findOne({
             planId: inv.investmentType,
           });
+
+          console.log(plan, "plan details for investment", inv._id, inv.amount);
 
           if (!plan) {
             console.warn(
@@ -547,7 +554,7 @@ class InvestmentService {
           // Create transaction record
           await this.TransactionModel.create({
             userId: inv.userId,
-            investmentId: inv._id,
+            transactionId: inv._id,
             type: "profit",
             creditedAmount: profit,
             description: `Daily ROI (${plan.roi}%) for ${plan.name} investment`,
@@ -647,7 +654,7 @@ class InvestmentService {
 
     // Update transactions
     await this.TransactionModel.updateMany(
-      { investmentId: investment._id, status: "active" },
+      { transactionId: investment._id, status: "active" },
       { status: "completed" },
     );
 
