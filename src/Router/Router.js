@@ -261,7 +261,7 @@ Router.post(
   forgotPasswordController.resetPassword, // Update password in database
 );
 
-Router.post(
+Router.get(
   "/crypto/prices",
   Require_Api_key,
   async (req, res) => {
