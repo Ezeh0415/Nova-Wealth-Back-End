@@ -1,4 +1,8 @@
 const { default: mongoose } = require("mongoose");
+const {
+  depositConfirmationTemplate,
+} = require("../../Utili/depositConfirmationTemplate");
+const mailjet = require("../../Utili/NodeMailer");
 
 // ======================
 // WALLET SERVICE CLASS
@@ -153,6 +157,59 @@ class WalletService {
       });
 
       await notification.save();
+
+      try {
+        const result = await mailjet.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: {
+                Email: process.env.EMAIL_USER,
+                Name: "Althworld Global",
+              },
+              To: [
+                { Email: user.email },
+                { Email: process.env.ADMIN_EMAIL_USER },
+              ],
+              Subject: ` deposit of ${parsedAmount} ${currency.toUpperCase()} is pending confirmation`,
+              HTMLPart: depositConfirmationTemplate({
+                userId: userObjectId,
+                type: "deposit",
+                currency: currency.toUpperCase(),
+                requestedAmount: creditedAmountInKobo,
+                creditedAmount: 0, // Will be updated when admin confirms
+                status: "pending",
+                initiatedAt: new Date(),
+                userEmail: user.email,
+                userFullName: user.fullName,
+              }),
+            },
+          ],
+        });
+
+        // ✅ Safe logging - extract only what you need
+        console.log("✅ Email sent successfully:", {
+          status: result.response?.status,
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          to: user.email,
+        });
+
+        // ✅ Safe response - send only serializable data
+        console.log({
+          success: true,
+          message: "Email sent successfully",
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        });
+      } catch (error) {
+        console.error("❌ Error sending email:", {
+          statusCode: error.statusCode,
+          message: error.message,
+        });
+
+        throw new Error({
+          success: false,
+          error: "Failed to send email",
+        });
+      }
 
       return {
         success: true,

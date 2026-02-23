@@ -14,6 +14,7 @@ const generateResetToken = require("../../../middlewares/GenerateResetToken");
 const {
   passwordResetSuccessTemplate,
 } = require("../../Utili/PasswordResetSuccessTamplate");
+const mailjet = require("../../Utili/NodeMailer");
 
 class forgotPasswordService {
   constructor({ userModel, ResetToken, SecurityLog }) {
@@ -116,32 +117,45 @@ class forgotPasswordService {
     const link = `${process.env.FRONTEND_URL}resetPassword?token=${resetToken.token}&key=${process.env.API_KEY}`;
 
     // 9. SEND RESET EMAIL
-    const request = await mailjet.post("send", { version: "v3.1" }).request({
-      Messages: [
-        {
-          From: { Email: `noreply@${process.env.EMAIL_USER }`, Name: "Althworld Global" },
-          To: { Email: "user1@gmail.com" },
-          Subject: "Your secure password reset link ",
-          HTMLPart: otpTemplate(link), // Uses email template with reset button,
-        },
-      ],
-    });
-    request
-      .then((result) => {
-        console.log("✅ Email sent successfully:", result.body);
-      })
-      .catch((err) => {
-        console.error("❌ Error sending email:", err.statusCode, err.message);
+    try {
+      const result = await mailjet.post("send", { version: "v3.1" }).request({
+        Messages: [
+          {
+            From: {
+              Email: process.env.EMAIL_USER,
+              Name: "Althworld Global",
+            },
+            To: [{ Email: user.email }],
+            Subject: "Your secure password reset link",
+            HTMLPart: otpTemplate(link),
+          },
+        ],
       });
 
-       // await transporter.sendMail({
-    //   from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-    //   to: user.email,
-    //   subject: "Your secure password reset link",
-    //   html: otpTemplate(link), // Uses email template with reset button
-    // });
+      // ✅ Safe logging - extract only what you need
+      console.log("✅ Email sent successfully:", {
+        status: result.response?.status,
+        messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        to: user.email,
+      });
 
+      // ✅ Safe response - send only serializable data
+      console.log({
+        success: true,
+        message: "Email sent successfully",
+        messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+      });
+    } catch (error) {
+      console.error("❌ Error sending email:", {
+        statusCode: error.statusCode,
+        message: error.message,
+      });
 
+      throw new Error({
+        success: false,
+        error: "Failed to send email",
+      });
+    }
 
     // 10. SECURITY LOGGING
     await this.SecurityLog.create({
