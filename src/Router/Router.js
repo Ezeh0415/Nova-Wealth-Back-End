@@ -264,7 +264,6 @@ Router.post(
 Router.post(
   "/crypto/prices",
   Require_Api_key,
-  Require_jwt_key,
   async (req, res) => {
     try {
       // Check cache first
