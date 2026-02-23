@@ -261,33 +261,38 @@ Router.post(
   forgotPasswordController.resetPassword, // Update password in database
 );
 
-Router.post("/crypto/prices", async (req, res) => {
-  try {
-    // Check cache first
-    const cachedData = cache.get("cryptoPrices");
-    if (cachedData) {
-      return res.json({ source: "cache", data: cachedData });
+Router.post(
+  "/crypto/prices",
+  Require_Api_key,
+  Require_jwt_key,
+  async (req, res) => {
+    try {
+      // Check cache first
+      const cachedData = cache.get("cryptoPrices");
+      if (cachedData) {
+        return res.json({ source: "cache", data: cachedData });
+      }
+
+      // Fetch from API
+      const response = await fetch(
+        "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false",
+      );
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Store in cache
+      cache.set("cryptoPrices", data);
+
+      res.json({ source: "api", data });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
     }
-
-    // Fetch from API
-    const response = await fetch(
-      "https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false",
-    );
-
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Store in cache
-    cache.set("cryptoPrices", data);
-
-    res.json({ source: "api", data });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+  },
+);
 
 // ======================
 // PROTECTED USER ROUTES (Require JWT Authentication)
