@@ -82,6 +82,7 @@ app.use((req, res, next) => {
   res.header(
     "Access-Control-Allow-Origin",
     "https://althworldf.onrender.com", // Production
+    "https://althworldglobal.com", //live domain
     "http://localhost:5173", // Local dev
     "http://localhost:5174", // Local dev
     "http://localhost:5175", // Alternate local
