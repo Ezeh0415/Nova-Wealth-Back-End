@@ -144,7 +144,7 @@ class SignUpService {
         newUser.referralLink = referralLinks;
 
         await newUser.save({ session });
-        
+
         // 7️⃣ Create welcome notification
         const welcomeNotification = new this.NotificationModel({
           user: newUser._id,
@@ -160,56 +160,97 @@ class SignUpService {
         const link = `${process.env.FRONTEND_URL}/login`;
 
         // Send welcome email to user - FIXED ✅
-        mailjet
-          .post("send", { version: "v3.1" })
-          .request({
-            Messages: [
-              {
-                From: {
-                  Email: `noreply@${process.env.EMAIL_USER }`,
-                  Name: "AlthWorld Global",
+        try {
+          const result = await mailjet
+            .post("send", { version: "v3.1" })
+            .request({
+              Messages: [
+                {
+                  From: {
+                    Email: process.env.EMAIL_USER,
+                    Name: "Althworld Global",
+                  },
+                  To: [{ Email: newUser.email }],
+                  Subject: "Your secure password reset link",
+                  HTMLPart: welcomeTemplate(newUser.fullName, link),
                 },
-                To: [{ Email: newUser.email }], // ✅ FIXED: Array with object
-                Subject: `Welcome to AlthWorld Global, ${newUser.userName}!`, // ✅ FIXED: Capital S
-                HTMLPart: welcomeTemplate(newUser.fullName, link),
-              },
-            ],
-          })
-          .then((result) => {
-            console.log("✅ Welcome email sent successfully to:", newUser.email);
-          })
-          .catch((err) => {
-            console.error("❌ Error sending welcome email:", err.statusCode, err.message);
+              ],
+            });
+
+          // ✅ Safe logging - extract only what you need
+          console.log("✅ Email sent successfully:", {
+            status: result.response?.status,
+            messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+            to: user.email,
           });
 
-        // Send admin notification - FIXED ✅
-        mailjet
-          .post("send", { version: "v3.1" })
-          .request({
-            Messages: [
-              {
-                From: {
-                  Email: `noreply@${process.env.EMAIL_USER }`,
-                  Name: "AlthWorld Global",
-                },
-                To: [{ Email: process.env.EMAIL_USER }], // ✅ FIXED: Array with object
-                Subject: `New User Registration: ${newUser.userName}`, // ✅ FIXED: Capital S
-                HTMLPart: adminNotificationTemplate({
-                  fullName: newUser.fullName,
-                  userName: newUser.userName,
-                  email: newUser.email,
-                  ipAddress: newUser.ipAddress || 'N/A',
-                  userAgent: newUser.userAgent || 'N/A'
-                }),
-              },
-            ],
-          })
-          .then((result) => {
-            console.log("✅ Admin notification sent successfully");
-          })
-          .catch((err) => {
-            console.error("❌ Error sending admin notification:", err.statusCode, err.message);
+          // ✅ Safe response - send only serializable data
+          console.log({
+            success: true,
+            message: "Email sent successfully",
+            messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
           });
+        } catch (error) {
+          console.error("❌ Error sending email:", {
+            statusCode: error.statusCode,
+            message: error.message,
+          });
+
+          throw new Error({
+            success: false,
+            error: "Failed to send email",
+          });
+        }
+
+        // Send admin notification - FIXED ✅
+
+        try {
+          const result = await mailjet
+            .post("send", { version: "v3.1" })
+            .request({
+              Messages: [
+                {
+                  From: {
+                    Email: process.env.EMAIL_USER,
+                    Name: "Althworld Global",
+                  },
+                  To: [{ Email: process.env.ADMIN_EMAIL_USER }], // ✅ FIXED: Array with object
+                  Subject: `New User Registration: ${newUser.userName}`, // ✅ FIXED: Capital S
+                  HTMLPart: adminNotificationTemplate({
+                    fullName: newUser.fullName,
+                    userName: newUser.userName,
+                    email: newUser.email,
+                    ipAddress: newUser.ipAddress || "N/A",
+                    userAgent: newUser.userAgent || "N/A",
+                  }),
+                },
+              ],
+            });
+
+          // ✅ Safe logging - extract only what you need
+          console.log("✅ Email sent successfully:", {
+            status: result.response?.status,
+            messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+            to: user.email,
+          });
+
+          // ✅ Safe response - send only serializable data
+          console.log({
+            success: true,
+            message: "Email sent successfully",
+            messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          });
+        } catch (error) {
+          console.error("❌ Error sending email:", {
+            statusCode: error.statusCode,
+            message: error.message,
+          });
+
+          throw new Error({
+            success: false,
+            error: "Failed to send email",
+          });
+        }
 
         // 9️⃣ Return sanitized data
         return {
