@@ -291,17 +291,46 @@ class forgotPasswordService {
         userAgent: userAgent,
       });
 
-      // 12. SEND CONFIRMATION EMAIL
+      // 12. SEND CONFIRMATION EMAIL  passwordResetSuccessTemplate(user.fullName, user.email)
       // BUG: 'email' variable is not defined - should be user.email
       try {
-        await transporter.sendMail({
-          from: `"AlthWorld" <${process.env.EMAIL_USER}>`,
-          to: user.email,
-          subject: "Password has been reset successfully",
-          html: passwordResetSuccessTemplate(user.fullName, user.email),
+        const result = await mailjet.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: {
+                Email: process.env.EMAIL_USER,
+                Name: "Althworld Global",
+              },
+              To: [{ Email: user.email }],
+              Subject: "Your secure password reset link",
+              HTMLPart: passwordResetSuccessTemplate(user.fullName, user.email),
+            },
+          ],
         });
-      } catch (err) {
-        throw new Error("Failed to send OTP email");
+
+        // ✅ Safe logging - extract only what you need
+        console.log("✅ Email sent successfully:", {
+          status: result.response?.status,
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          to: user.email,
+        });
+
+        // ✅ Safe response - send only serializable data
+        console.log({
+          success: true,
+          message: "Email sent successfully",
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        });
+      } catch (error) {
+        console.error("❌ Error sending email:", {
+          statusCode: error.statusCode,
+          message: error.message,
+        });
+
+        throw new Error({
+          success: false,
+          error: "Failed to send email",
+        });
       }
 
       // 13. SUCCESS RESPONSE

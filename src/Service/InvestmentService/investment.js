@@ -1,4 +1,8 @@
 const { default: mongoose } = require("mongoose");
+const mailjet = require("../../Utili/NodeMailer");
+const {
+  investmentConfirmationTemplate,
+} = require("../../Utili/investmentEmailTamplate");
 
 // ======================
 // INVESTMENT SERVICE CLASS
@@ -220,6 +224,62 @@ class InvestmentService {
         icon: "investment",
       });
 
+      try {
+        const result = await mailjet.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: {
+                Email: process.env.EMAIL_USER,
+                Name: "Althworld Global",
+              },
+              To: [
+                { Email: user.email },
+                { Email: process.env.ADMIN_EMAIL_USER },
+              ],
+              Subject: `${user.fullName} Your ${plan.name} investment request of $${amount} has been created and is pending approval.`,
+              HTMLPart: investmentConfirmationTemplate({
+                _id: investment._id,
+                userId: investment.userId,
+                amount: investment.amount,
+                roi: investment.roi,
+                TotalReturns: investment.TotalReturns, // $1,250.00
+                lastRoiAt: investment.lastRoiAt,
+                investmentType: investment.investmentType,
+                investmentStatus: investment.investmentStatus,
+                investmentStartDate: investment.investmentStartDate,
+                investmentEndDate: investment.investmentEndDate,
+                createdAt: investment.createdAt,
+                formatType: "Request Created",
+              }),
+            },
+          ],
+        });
+
+        // ✅ Safe logging - extract only what you need
+        console.log("✅ Email sent successfully:", {
+          status: result.response?.status,
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          to: user.email,
+        });
+
+        // ✅ Safe response - send only serializable data
+        console.log({
+          success: true,
+          message: "Email sent successfully",
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        });
+      } catch (error) {
+        console.error("❌ Error sending email:", {
+          statusCode: error.statusCode,
+          message: error.message,
+        });
+
+        throw new Error({
+          success: false,
+          error: "Failed to send email",
+        });
+      }
+
       return {
         success: true,
         message:
@@ -265,6 +325,11 @@ class InvestmentService {
       // 2. CHECK STATUS
       if (investment.investmentStatus !== "pending") {
         throw new Error(`Investment is already ${investment.investmentStatus}`);
+      }
+
+      const user = await this.userModels.findOne({ _id: investment.userId });
+      if (!user) {
+        throw new Error(`User not found for userId: ${investment.userId}`);
       }
 
       // 3. FIND USER'S WALLET
@@ -319,7 +384,7 @@ class InvestmentService {
 
       // 9. UPDATE USER TRANSACTION
       await this.TransactionModel.updateOne(
-        { transactionId: investment._id},
+        { transactionId: investment._id },
         { status: "active" },
       );
 
@@ -339,6 +404,62 @@ class InvestmentService {
         category: "investment",
         icon: "investment",
       });
+
+      try {
+        const result = await mailjet.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: {
+                Email: process.env.EMAIL_USER,
+                Name: "Althworld Global",
+              },
+              To: [
+                { Email: user.email },
+                { Email: process.env.ADMIN_EMAIL_USER },
+              ],
+              Subject: `${user.fullName} Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} is now active. It will mature on ${actualEndDate.toLocaleDateString()}.`,
+              HTMLPart: investmentConfirmationTemplate({
+                _id: investment._id,
+                userId: investment.userId,
+                amount: investment.amount,
+                roi: investment.roi,
+                TotalReturns: investment.TotalReturns, // $1,250.00
+                lastRoiAt: investment.lastRoiAt,
+                investmentType: investment.investmentType,
+                investmentStatus: investment.investmentStatus,
+                investmentStartDate: investment.investmentStartDate,
+                investmentEndDate: investment.investmentEndDate,
+                createdAt: investment.createdAt,
+                formatType: "confirmed",
+              }),
+            },
+          ],
+        });
+
+        // ✅ Safe logging - extract only what you need
+        console.log("✅ Email sent successfully:", {
+          status: result.response?.status,
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          to: user.email,
+        });
+
+        // ✅ Safe response - send only serializable data
+        console.log({
+          success: true,
+          message: "Email sent successfully",
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        });
+      } catch (error) {
+        console.error("❌ Error sending email:", {
+          statusCode: error.statusCode,
+          message: error.message,
+        });
+
+        throw new Error({
+          success: false,
+          error: "Failed to send email",
+        });
+      }
 
       return {
         success: true,
@@ -365,124 +486,6 @@ class InvestmentService {
       throw error;
     }
   }
-
-  // async confirmInvestment(investmentId) {
-  //   try {
-  //     // 1. FIND INVESTMENT
-  //     const investment = await this.InvestmentModel.findById(investmentId);
-  //     if (!investment) {
-  //       throw new Error("Investment not found");
-  //     }
-
-  //     // 2. CHECK STATUS
-  //     if (investment.investmentStatus !== "pending") {
-  //       throw new Error(`Investment is already ${investment.investmentStatus}`);
-  //     }
-
-  //     // 3. FIND USER'S WALLET
-  //     const wallet = await this.WalletModel.findOne({ userId: investment.userId });
-  //     if (!wallet) {
-  //       throw new Error("Wallet not found");
-  //     }
-
-  //     // 4. FIND INVESTMENT PLAN FOR DURATION
-  //     const plan = await this.InvestmentPlanModel.findOne({
-  //       planId: investment.investmentType,
-  //     });
-
-  //     if (!plan) {
-  //       throw new Error(`Investment plan "${investment.investmentType}" not found`);
-  //     }
-
-  //     // 5. MOVE FUNDS FROM PENDING TO INVESTMENT BALANCE
-  //     if (wallet.pendingInvestment < investment.amount) {
-  //       throw new Error("Insufficient pending investment balance");
-  //     }
-
-  //     wallet.pendingInvestment -= investment.amount;
-  //     wallet.invBalance = (wallet.invBalance || 0) + investment.amount;
-  //     await wallet.save();
-
-  //     console.log(
-  //       `✅ Moved ${investment.amount / 100} from pending to investment balance`,
-  //     );
-
-  //     // 6. SET ACTUAL DATES BASED ON PLAN DURATION
-  //     const actualStartDate = new Date();
-  //     const actualEndDate = new Date(actualStartDate);
-  //     actualEndDate.setDate(actualEndDate.getDate() + plan.duration);
-
-  //     // 7. UPDATE INVESTMENT
-  //     investment.investmentStartDate = actualStartDate;
-  //     investment.investmentEndDate = actualEndDate;
-  //     investment.investmentStatus = "active";
-  //     investment.lastRoiAt = actualStartDate; // Initialize ROI tracking
-  //     await investment.save();
-
-  //     // 8. UPDATE ADMIN TRANSACTION
-  //     await this.AdminTransactionModel.updateOne(
-  //       { transactionId: investment._id },
-  //       { status: "active" }
-  //     );
-
-  //     // 9. UPDATE USER TRANSACTION
-  //     await this.TransactionModel.updateOne(
-  //       {
-  //         investmentId: investment._id,
-  //         status: "pending",
-  //       },
-  //       {
-  //         status: "active",
-  //         description: `${plan.name} investment Deactivated - $${(investment.amount / 100).toFixed(2)} `,
-  //       }
-  //     );
-
-  //     // 10. SEND NOTIFICATION
-  //     await this.NotificationModel.create({
-  //       user: investment.userId,
-  //       type: "investment",
-  //       title: "Investment DeActivated! 🎉",
-  //       message: `Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} is now deactivated.`,
-  //       data: {
-  //         investmentId: investment._id,
-  //         startDate: actualStartDate,
-  //         endDate: actualEndDate,
-  //         planName: plan.name,
-  //         roi: plan.roi,
-  //       },
-  //       category: "investment",
-  //       icon: "investment",
-  //     });
-
-  //     return {
-  //       success: true,
-  //       message: "Investment cancled and Deactivated successfully",
-  //       investment: {
-  //         id: investment._id,
-  //         amount: investment.amount / 100,
-  //         investmentType: investment.investmentType,
-  //         planName: plan.name,
-  //         roi: investment.roi,
-  //         startDate: actualStartDate,
-  //         endDate: actualEndDate,
-  //         duration: plan.duration,
-  //         status: "active",
-  //       },
-  //       wallet: {
-  //         pendingInvestment: wallet.pendingInvestment / 100,
-  //         invBalance: wallet.invBalance / 100,
-  //         balance: wallet.balance / 100,
-  //       },
-  //     };
-  //   } catch (error) {
-  //     console.error("❌ Investment confirmation error:", error.message);
-  //     throw error;
-  //   }
-  // }
-
-  // ======================
-  // DAILY ROI PROCESSING (CRON JOB)
-  // ======================
 
   /**
    * Processes daily Return on Investment for all active investments
@@ -627,6 +630,11 @@ class InvestmentService {
       return investment;
     }
 
+    const user = await this.userModels.findOne({ _id: investment.userId });
+    if (!user) {
+      throw new Error(`User not found for userId: ${investment.userId}`);
+    }
+
     // Find user's wallet
     const wallet = await this.WalletModel.findOne({
       userId: investment.userId,
@@ -683,6 +691,62 @@ class InvestmentService {
       category: "investment",
       icon: "investment",
     });
+
+    try {
+      const result = await mailjet.post("send", { version: "v3.1" }).request({
+        Messages: [
+          {
+            From: {
+              Email: process.env.EMAIL_USER,
+              Name: "Althworld Global",
+            },
+            To: [
+              { Email: user.email },
+              { Email: process.env.ADMIN_EMAIL_USER },
+            ],
+            Subject: `${user.fullName} Your ${investment.investmentType} investment has completed. $${(totalInvBalance / 100).toFixed(2)} (Capital: $${(capital / 100).toFixed(2)} + Returns: $${(returns / 100).toFixed(2)}) has been credited to your wallet.`,
+            HTMLPart: investmentConfirmationTemplate({
+              _id: investment._id,
+              userId: investment.userId,
+              amount: investment.amount,
+              roi: investment.roi,
+              TotalReturns: investment.TotalReturns, // $1,250.00
+              lastRoiAt: investment.lastRoiAt,
+              investmentType: investment.investmentType,
+              investmentStatus: investment.investmentStatus,
+              investmentStartDate: investment.investmentStartDate,
+              investmentEndDate: investment.investmentEndDate,
+              createdAt: investment.createdAt,
+              formatType: "completed",
+            }),
+          },
+        ],
+      });
+
+      // ✅ Safe logging - extract only what you need
+      console.log("✅ Email sent successfully:", {
+        status: result.response?.status,
+        messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        to: user.email,
+      });
+
+      // ✅ Safe response - send only serializable data
+      console.log({
+        success: true,
+        message: "Email sent successfully",
+        messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+      });
+    } catch (error) {
+      console.error("❌ Error sending email:", {
+        statusCode: error.statusCode,
+        message: error.message,
+      });
+
+      throw new Error({
+        success: false,
+        error: "Failed to send email",
+      });
+    }
 
     return {
       investment,

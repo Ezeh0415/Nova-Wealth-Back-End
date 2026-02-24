@@ -3,6 +3,10 @@ const {
   depositConfirmationTemplate,
 } = require("../../Utili/depositConfirmationTemplate");
 const mailjet = require("../../Utili/NodeMailer");
+const {
+  withdrawalConfirmationTemplate,
+} = require("../../Utili/WithdrawConfirmationTemplate");
+const { depositConfirmation } = require("../../Utili/DepositConfirm");
 
 // ======================
 // WALLET SERVICE CLASS
@@ -352,6 +356,59 @@ class WalletService {
 
       await notification.save();
 
+      try {
+        const result = await mailjet.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: {
+                Email: process.env.EMAIL_USER,
+                Name: "Althworld Global",
+              },
+              To: [
+                { Email: user.email },
+                { Email: process.env.ADMIN_EMAIL_USER },
+              ],
+              Subject: ` Withdrawal of ${parsedAmount} ${currency.toUpperCase()} is pending confirmation`,
+              HTMLPart: withdrawalConfirmationTemplate({
+                userId: userObjectId,
+                type: "withdraw",
+                currency: currency.toUpperCase(),
+                requestedAmount: creditedAmountInKobo,
+                creditedAmount: 0, // Will be updated on confirmation
+                status: "pending",
+                initiatedAt: new Date(),
+                userEmail: user.email,
+                userFullName: user.fullName,
+              }),
+            },
+          ],
+        });
+
+        // ✅ Safe logging - extract only what you need
+        console.log("✅ Email sent successfully:", {
+          status: result.response?.status,
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          to: user.email,
+        });
+
+        // ✅ Safe response - send only serializable data
+        console.log({
+          success: true,
+          message: "Email sent successfully",
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        });
+      } catch (error) {
+        console.error("❌ Error sending email:", {
+          statusCode: error.statusCode,
+          message: error.message,
+        });
+
+        throw new Error({
+          success: false,
+          error: "Failed to send email",
+        });
+      }
+
       return {
         success: true,
         message: "withdraw request submitted successfully",
@@ -513,8 +570,62 @@ class WalletService {
         type: "deposit",
         title: "Deposit Confirmed",
         message: `Your deposit of $${(creditedAmountInKobo / 100).toFixed(2)} has been confirmed.${isFirstDeposit ? " This was your first deposit!" : ""}`,
-        category: "transaction",
+        category: "deposit",
       });
+
+      try {
+        const result = await mailjet.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: {
+                Email: process.env.EMAIL_USER,
+                Name: "Althworld Global",
+              },
+              To: [
+                { Email: user.email },
+                { Email: process.env.ADMIN_EMAIL_USER },
+              ],
+              Subject: ` deposit of ${creditedAmountInKobo} ${transaction.currency.toUpperCase()} has been confirmed!`,
+              HTMLPart: depositConfirmation({
+                userId: userId,
+                type: transaction.type,
+                currency: transaction.currency,
+                creditedAmount: creditedAmount, // $1,250.00
+                status: "completed",
+                creditedAt: new Date(),
+                userEmail: user.email,
+                userFullName: user.fullName,
+                transactionId: transactionId,
+                isFirstDeposit: isFirstDeposit, // or false
+              }),
+            },
+          ],
+        });
+
+        // ✅ Safe logging - extract only what you need
+        console.log("✅ Email sent successfully:", {
+          status: result.response?.status,
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          to: user.email,
+        });
+
+        // ✅ Safe response - send only serializable data
+        console.log({
+          success: true,
+          message: "Email sent successfully",
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        });
+      } catch (error) {
+        console.error("❌ Error sending email:", {
+          statusCode: error.statusCode,
+          message: error.message,
+        });
+
+        throw new Error({
+          success: false,
+          error: "Failed to send email",
+        });
+      }
 
       return {
         success: true,
@@ -670,6 +781,12 @@ class WalletService {
           `Admin transaction not found with transactionId: ${transactionId}`,
         );
 
+      // 3. FIND USER
+      const user = await this.userModel.findOne({ _id: userId });
+      if (!user) {
+        throw new Error(`User not found for userId: ${userId}`);
+      }
+
       // 2. DUPLICATE CONFIRMATION CHECK
       if (adminTransaction.isConfirmed === "true")
         throw new Error("Transaction already confirmed");
@@ -706,6 +823,68 @@ class WalletService {
       adminTransaction.isConfirmed = "true";
 
       await adminTransaction.save();
+
+      await this.NotificationModel.create({
+        user: userId,
+        type: "withdrawal",
+        title: "Withdrawal Confirmed",
+        message: `Your Withdrawal of $${(creditedAmountInKobo / 100).toFixed(2)} has been confirmed.`,
+        category: "withdrawal",
+      });
+
+      try {
+        const result = await mailjet.post("send", { version: "v3.1" }).request({
+          Messages: [
+            {
+              From: {
+                Email: process.env.EMAIL_USER,
+                Name: "Althworld Global",
+              },
+              To: [
+                { Email: user.email },
+                { Email: process.env.ADMIN_EMAIL_USER },
+              ],
+              Subject: ` Withdrawal of ${creditedAmountInKobo} ${transaction.currency.toUpperCase()} has been confirmed`,
+              HTMLPart: depositConfirmation({
+                userId: userId,
+                type: "withdrawal",
+                currency: transaction.currency,
+                creditedAmount: creditedAmount, // $1,250.00
+                status: "completed",
+                creditedAt: new Date(),
+                userEmail: user.email,
+                userFullName: user.fullName,
+                transactionId: transactionId,
+                isFirstDeposit: false, // or false
+              }),
+            },
+          ],
+        });
+
+        // ✅ Safe logging - extract only what you need
+        console.log("✅ Email sent successfully:", {
+          status: result.response?.status,
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+          to: user.email,
+        });
+
+        // ✅ Safe response - send only serializable data
+        console.log({
+          success: true,
+          message: "Email sent successfully",
+          messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
+        });
+      } catch (error) {
+        console.error("❌ Error sending email:", {
+          statusCode: error.statusCode,
+          message: error.message,
+        });
+
+        throw new Error({
+          success: false,
+          error: "Failed to send email",
+        });
+      }
 
       return {
         success: true,
