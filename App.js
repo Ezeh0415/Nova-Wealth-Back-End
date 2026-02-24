@@ -42,12 +42,13 @@ dotenv.config();
 // These are the domains that are permitted to make requests to this API
 const allowedOrigins = [
   "https://althworldf.onrender.com", // Production frontend
+  "https://althworldglobal.com", //live domain
   "http://localhost:5173", // Local development (Vite default)
   "http://localhost:5174", // Local development (Vite default)
   "http://localhost:5175", // Alternate local port
   "http://localhost:8080", // Local server port
     "https://api.coingecko.com/api/v3/coins/markets?" +
-            "vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false" // coin gkeco
+            "vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false", // coin gkeco
   "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app", // Vercel deployment
 ];
 
@@ -86,7 +87,7 @@ app.use((req, res, next) => {
     "https://althworldf.onrender.com", // Production
     "https://althworldglobal.com", //live domain
     "https://api.coingecko.com/api/v3/coins/markets?" +
-            "vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false" // coin gkeco
+            "vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false", // coin gkeco
     "http://localhost:5173", // Local dev
     "http://localhost:5174", // Local dev
     "http://localhost:5175", // Alternate local
