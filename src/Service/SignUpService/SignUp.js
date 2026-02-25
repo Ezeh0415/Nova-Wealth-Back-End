@@ -171,7 +171,7 @@ class SignUpService {
                     Name: "Althworld Global",
                   },
                   To: [{ Email: newUser.email }],
-                  Subject: "Your secure password reset link",
+                  Subject: "New User Registration: ${newUser.userName}"
                   HTMLPart: welcomeTemplate(newUser.fullName, link),
                 },
               ],
@@ -181,7 +181,7 @@ class SignUpService {
           console.log("✅ Email sent successfully:", {
             status: result.response?.status,
             messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
-            to: user.email,
+            to: newUser.email,
           });
 
           // ✅ Safe response - send only serializable data
@@ -215,7 +215,7 @@ class SignUpService {
                     Name: "Althworld Global",
                   },
                   To: [{ Email: process.env.ADMIN_EMAIL_USER }], // ✅ FIXED: Array with object
-                  Subject: `New User Registration: ${newUser.userName}`, // ✅ FIXED: Capital S
+                  Subject: ``, // ✅ FIXED: Capital S
                   HTMLPart: adminNotificationTemplate({
                     fullName: newUser.fullName,
                     userName: newUser.userName,
@@ -231,7 +231,7 @@ class SignUpService {
           console.log("✅ Email sent successfully:", {
             status: result.response?.status,
             messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
-            to: user.email,
+            to: newUser.email,
           });
 
           // ✅ Safe response - send only serializable data
