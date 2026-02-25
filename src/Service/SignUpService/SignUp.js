@@ -133,12 +133,14 @@ class SignUpService {
         );
 
         // 6. Generate referral code & link
-        const uniqueCode = nanoid(16);
-        const newReferralCode = `\( {newUser.userName}- \){uniqueCode}`;
-        const referralLink = `\( {process.env.FRONTEND_URL}/signup?ref= \){newReferralCode}`;
+        const uniqueCode = nanoid(16); // Generate a unique referral code
+        const newReferralCode = `${newUser.userName}-${uniqueCode}`;
+
+        const referralLinks = `${process.env.FRONTEND_URL}/signup?ref=${newReferralCode}`;
 
         newUser.referralCode = newReferralCode;
-        newUser.referralLink = referralLink;
+        newUser.referralLink = referralLinks;
+
         await newUser.save({ session });
 
         // 7. Welcome notification
