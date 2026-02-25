@@ -43,8 +43,8 @@ class SignUpService {
         // 2. Check for existing user (case-insensitive)
         const existingUser = await this.UserModel.findOne({
           $or: [
-            { userName: { \( regex: new RegExp(`^ \){userName}$`, "i") } },
-            { email: { \( regex: new RegExp(`^ \){email}$`, "i") } },
+            { userName: userName},
+            { email: email},
           ],
         }).session(session);
 
