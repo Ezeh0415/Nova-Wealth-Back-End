@@ -196,10 +196,11 @@ class SignUpService {
             message: error.message,
           });
 
-          throw new Error({
-            success: false,
-            error: "Failed to send email",
-          });
+          const err = new Error("Failed to send user notification email");
+err.code = "EMAIL_SEND_FAILED";
+err.status = 500;
+err.details = { statusCode: error.statusCode, mailjetError: error.message };
+throw err;
         }
 
         // Send admin notification - FIXED ✅
@@ -215,7 +216,7 @@ class SignUpService {
                     Name: "Althworld Global",
                   },
                   To: [{ Email: process.env.ADMIN_EMAIL_USER }], // ✅ FIXED: Array with object
-                  Subject: ``, // ✅ FIXED: Capital S
+                  Subject: `New User Registration: ${newUser.userName}`, // ✅ FIXED: Capital S
                   HTMLPart: adminNotificationTemplate({
                     fullName: newUser.fullName,
                     userName: newUser.userName,
@@ -231,7 +232,7 @@ class SignUpService {
           console.log("✅ Email sent successfully:", {
             status: result.response?.status,
             messageId: result.body?.Messages?.[0]?.To?.[0]?.MessageID,
-            to: newUser.email,
+            to: process.env.ADMIN_EMAIL_USER,
           });
 
           // ✅ Safe response - send only serializable data
@@ -246,10 +247,11 @@ class SignUpService {
             message: error.message,
           });
 
-          throw new Error({
-            success: false,
-            error: "Failed to send email",
-          });
+          const err = new Error("Failed to send admin notification email");
+err.code = "EMAIL_SEND_FAILED";
+err.status = 500;
+err.details = { statusCode: error.statusCode, mailjetError: error.message };
+throw err;
         }
 
         // 9️⃣ Return sanitized data
