@@ -174,7 +174,7 @@ class WalletService {
                 { Email: user.email },
                 { Email: process.env.ADMIN_EMAIL_USER },
               ],
-              Subject: ` deposit of ${parsedAmount} ${currency.toUpperCase()} is pending confirmation`,
+              Subject: ` deposit of ${creditedAmountInKobo} ${currency.toUpperCase()} is pending confirmation`,
               HTMLPart: depositConfirmationTemplate({
                 userId: userObjectId,
                 type: "deposit",
@@ -368,7 +368,7 @@ class WalletService {
                 { Email: user.email },
                 { Email: process.env.ADMIN_EMAIL_USER },
               ],
-              Subject: ` Withdrawal of ${parsedAmount} ${currency.toUpperCase()} is pending confirmation`,
+              Subject: ` Withdrawal of ${creditedAmountInKobo} ${currency.toUpperCase()} is pending confirmation`,
               HTMLPart: withdrawalConfirmationTemplate({
                 userId: userObjectId,
                 type: "withdraw",
