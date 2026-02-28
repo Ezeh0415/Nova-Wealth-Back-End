@@ -494,6 +494,8 @@ class InvestmentService {
   async processDailyROI() {
     try {
       const now = new Date();
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Start of today for date comparison
 
       // Get all ACTIVE investments
       const investments = await this.InvestmentModel.find({
@@ -517,20 +519,24 @@ class InvestmentService {
             continue;
           }
 
-          // // Check if we've already processed ROI today
-          const lastRun = inv.lastRoiAt || inv.investmentStartDate;
-          const hoursSinceLastRun = (now - lastRun) / (1000 * 60 * 60);
+          // FIX 1: Use date-based check instead of hours
+          const lastRunDate = inv.lastRoiAt
+            ? new Date(inv.lastRoiAt)
+            : new Date(inv.investmentStartDate);
 
-          if (hoursSinceLastRun < 24) {
-            continue; // Not 24 hours yet
+          // Compare dates (ignoring time)
+          const lastRunDay = new Date(lastRunDate);
+          lastRunDay.setHours(0, 0, 0, 0);
+
+          // If already processed today, skip
+          if (lastRunDay.getTime() === today.getTime()) {
+            continue;
           }
 
-          // Get ROI rate from plan (convert percentage to decimal for calculation)
+          // Get ROI rate from plan
           const plan = await this.InvestmentPlanModel.findOne({
             planId: inv.investmentType,
           });
-
-          console.log(plan, "plan details for investment", inv._id, inv.amount);
 
           if (!plan) {
             console.warn(
@@ -539,13 +545,35 @@ class InvestmentService {
             continue;
           }
 
-          // Calculate profit: amount * (roi/100) for daily percentage
+          // FIX 2: Calculate compound interest based on current total
+          const currentTotal = inv.amount + (inv.TotalReturns || 0);
           const dailyRate = plan.roi / 100;
-          const profit = Math.round(inv.amount * dailyRate);
+          let profit = Math.round(currentTotal * dailyRate);
+
+          // FIX 3: Ensure at least 1 kobo profit if calculation rounds to 0
+          if (profit === 0 && currentTotal * dailyRate > 0) {
+            profit = 1;
+          }
+
+          // FIX 4: Check if investment has reached maximum allowed (if plan has max amount)
+          if (plan.maxAmount) {
+            const maxInKobo = plan.maxAmount * 100;
+            const projectedTotal = currentTotal + profit;
+
+            if (projectedTotal > maxInKobo) {
+              // Only add enough to reach max
+              profit = maxInKobo - currentTotal;
+              if (profit <= 0) {
+                // Already at max, complete investment
+                await this.completeInvestment(inv._id);
+                continue;
+              }
+            }
+          }
 
           // Update investment returns
           inv.TotalReturns = (inv.TotalReturns || 0) + profit;
-          inv.lastRoiAt = now;
+          inv.lastRoiAt = now; // Store full datetime for reference
           await inv.save();
 
           // Update wallet investment balance
@@ -565,7 +593,7 @@ class InvestmentService {
           });
 
           console.log(
-            `💰 Credited $${profit / 100} ROI for investment ${inv._id}`,
+            `💰 Credited $${(profit / 100).toFixed(2)} ROI for investment ${inv._id} (Total now: $${((currentTotal + profit) / 100).toFixed(2)})`,
           );
         } catch (error) {
           console.error(
