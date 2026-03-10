@@ -52,7 +52,13 @@ class Login {
   async login(userName) {
     // Query the database for a user with the exact matching username
     // Uses Mongoose's findOne method with case-sensitive matching
-    return await this.UserModel.findOne({ userName: userName });
+    //return await this.UserModel.findOne({ userName: userName });
+    return await this.UserModel.findOne({
+      $or: [
+       { userName: userName },
+      { email: userName }
+       ]
+     });
   }
 
   // ================================================================
