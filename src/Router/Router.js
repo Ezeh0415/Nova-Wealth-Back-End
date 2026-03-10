@@ -234,8 +234,8 @@ Router.post(
 // Middleware chain: validate login data → check API key → process login
 Router.post(
   "/login",
-  loginValidator, // Validate login credentials format
-  validate, // Run validation middleware
+  // loginValidator, // Validate login credentials format
+  // validate, // Run validation middleware
   Require_Api_key, // Validate API key
   Logincontroller.login, // Handle login logic
 );
