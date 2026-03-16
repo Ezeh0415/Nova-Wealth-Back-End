@@ -34,7 +34,7 @@ const investmentSchema = new mongoose.Schema(
     },
     investmentEndDate: {
       type: Date,
-      default: Date.now,
+      default: null,
     },
     description: {
       type: String,
