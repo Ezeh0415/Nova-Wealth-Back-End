@@ -499,9 +499,11 @@ Router.put(
 
 Router.put(
   "/cancleInvest",
-  Require_Api_key,
-  investmentController.cancleInvestment,
+  // Require_Api_key,
+  investmentController.cancelInvestment,
 )
+
+
 
 // Confirm Withdrawal (Admin)
 // Path: POST /api/confirmWithdraw

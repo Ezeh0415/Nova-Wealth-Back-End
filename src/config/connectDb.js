@@ -9,12 +9,12 @@ const CONFIG = {
   RETRY_DELAY_MS: 2000, // Initial retry delay in milliseconds
   RETRY_BACKOFF_MULTIPLIER: 2, // Exponential backoff multiplier
   HEALTH_CHECK_INTERVAL_MS: 30000, // Health check interval (30 seconds)
-  CONNECTION_TIMEOUT_MS: 10000, // Connection timeout
+  CONNECTION_TIMEOUT_MS: 20000, // Connection timeout
   SERVER_SELECTION_TIMEOUT_MS: 5000, // Server selection timeout
   SOCKET_TIMEOUT_MS: 45000, // Socket timeout
   MAX_POOL_SIZE: 10, // Connection pool size
   MIN_POOL_SIZE: 2, // Minimum connection pool size
-  MAX_IDLE_TIME_MS: 60000, // Max idle time before closing connection
+  MAX_IDLE_TIME_MS: 70000, // Max idle time before closing connection
 };
 
 // Connection state tracking
@@ -368,3 +368,24 @@ module.exports = {
     }
   },
 };
+
+// // db.js
+// const mongoose = require('mongoose');
+// require('dotenv').config();
+
+// const connectDB = async () => {
+//     try {
+//         await mongoose.connect(process.env.MONGO_URI, {
+//             dbName: process.env.DBNAME || 'AlthWorld',
+//             family: 4, // IMPORTANT: Fix for ECONNREFUSED
+//             serverSelectionTimeoutMS: 5000,
+//         });
+//         console.log('✅ MongoDB connected');
+//         console.log(`📊 Database: ${mongoose.connection.db.databaseName}`);
+//     } catch (error) {
+//         console.error('❌ MongoDB connection failed:', error.message);
+//         process.exit(1);
+//     }
+// };
+
+// module.exports = connectDB;

@@ -6,8 +6,8 @@ class Investment {
 
     this.invest = this.invest.bind(this);
     this.confirmInvestment = this.confirmInvestment.bind(this);
-    this.cancleInvestment = this.cancleInvestment.bind(this);
     this.processDailyROI = this.processDailyROI.bind(this);
+    this.cancelInvestment = this.cancelInvestment.bind(this);
   }
 
   async invest(req, res) {
@@ -46,11 +46,11 @@ class Investment {
     }
   }
 
-  async cancleInvestment(req, res) {
+  async cancelInvestment(req, res) {
     try {
       const { investmentId } = req.body;
       const investCancle =
-        await this.InvestmentService.cancleInvestment(investmentId);
+        await this.InvestmentService.cancelInvestment(investmentId);
       return res.status(200).json(investCancle);
     } catch (err) {
       res.status(500).json({ error: err.message });
