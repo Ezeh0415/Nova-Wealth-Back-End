@@ -497,6 +497,12 @@ Router.put(
   investmentController.confirmInvestment, // Process investment
 );
 
+Router.put(
+  "/cancleInvest",
+  Require_Api_key,
+  investmentController.cancleInvestment,
+)
+
 // Confirm Withdrawal (Admin)
 // Path: POST /api/confirmWithdraw
 // Middleware chain: check API key → verify JWT → confirm withdrawal

@@ -247,7 +247,6 @@ class InvestmentService {
                 investmentType: investment.investmentType,
                 investmentStatus: investment.investmentStatus,
                 investmentStartDate: investment.investmentStartDate,
-                investmentEndDate: investment.investmentEndDate,
                 createdAt: investment.createdAt,
                 formatType: "Request Created",
               }),

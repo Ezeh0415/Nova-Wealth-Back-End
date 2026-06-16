@@ -1,50 +1,58 @@
 function investmentConfirmationTemplate(
   investmentData,
-  appName = "AlthWorldGlobal"
+  appName = "AlthWorldGlobal",
 ) {
-  const { 
+  const {
     _id,
-    userId, 
-    amount, 
-    roi, 
+    userId,
+    amount,
+    roi,
     TotalReturns,
     lastRoiAt,
-    investmentType, 
-    investmentStatus, 
-    investmentStartDate, 
+    investmentType,
+    investmentStatus,
+    investmentStartDate,
     investmentEndDate,
     createdAt,
-    formatType
+    formatType,
   } = investmentData;
-  
-  const startDate = new Date(investmentStartDate).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+
+  const startDate = new Date(investmentStartDate).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
-  
-  const endDate = new Date(investmentEndDate).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+
+  const endDate = new Date(investmentEndDate).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
-  
+
   const createdDate = new Date(createdAt).toLocaleString();
-  const lastRoiDate = lastRoiAt ? new Date(lastRoiAt).toLocaleString() : 'Not yet calculated';
-  
+  const lastRoiDate = lastRoiAt
+    ? new Date(lastRoiAt).toLocaleString()
+    : "Not yet calculated";
+
   const amountInDollars = (amount / 100).toFixed(2);
   const returnsInDollars = (TotalReturns / 100).toFixed(2);
   const totalValueInDollars = ((amount + TotalReturns) / 100).toFixed(2);
-  
-  const investmentId = _id?.toString().slice(-8) || userId.toString().slice(-8) + Date.now().toString().slice(-6);
-  
+
+  const investmentId =
+    _id?.toString().slice(-8) ||
+    userId.toString().slice(-8) + Date.now().toString().slice(-6);
+
   // Calculate days remaining
   const today = new Date();
   const end = new Date(investmentEndDate);
-  const daysRemaining = Math.max(0, Math.ceil((end - today) / (1000 * 60 * 60 * 24)));
-  
+  const daysRemaining = Math.max(
+    0,
+    Math.ceil((end - today) / (1000 * 60 * 60 * 24)),
+  );
+
   // Format investment type with proper capitalization
-  const formattedType = investmentType.charAt(0).toUpperCase() + investmentType.slice(1);
+  const formattedType =
+    investmentType.charAt(0).toUpperCase() + investmentType.slice(1);
 
   return `
     <!DOCTYPE html>
@@ -107,7 +115,7 @@ function investmentConfirmationTemplate(
           
           <!-- Progress Bar -->
           <div style="background: #f3f4f6; border-radius: 50px; height: 10px; margin-bottom: 30px; overflow: hidden;">
-            <div style="width: ${daysRemaining > 0 ? '70' : '100'}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 50px;"></div>
+            <div style="width: ${daysRemaining > 0 ? "70" : "100"}%; height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); border-radius: 50px;"></div>
           </div>
           
           <!-- Investment Details -->
@@ -191,6 +199,6 @@ function investmentConfirmationTemplate(
   `;
 }
 
-module.exports = { 
-  investmentConfirmationTemplate 
+module.exports = {
+  investmentConfirmationTemplate,
 };
