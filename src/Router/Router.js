@@ -498,8 +498,8 @@ Router.put(
 );
 
 Router.put(
-  "/cancleInvest",
-  // Require_Api_key,
+  "/cancelInvest",
+  Require_Api_key,
   investmentController.cancelInvestment,
 )
 
