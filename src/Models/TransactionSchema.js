@@ -13,7 +13,7 @@ const TransactionSchema = new mongoose.Schema({
   creditedAmount: { type: Number }, // what admin actually credited
   status: {
     type: String,
-    enum: ["active", "canceled", "pending", "completed"],
+    enum: ["active", "cancelled", "pending", "completed"],
     default: "pending",
   },
   createdAt: { type: Date, default: Date.now },

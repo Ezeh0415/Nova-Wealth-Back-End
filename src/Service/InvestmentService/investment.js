@@ -816,6 +816,7 @@ class InvestmentService {
    * Cancel a pending investment
    */
   async cancelInvestment(investmentId) {
+    console.log(investmentId);
     const investment = await this.InvestmentModel.findById(investmentId);
     if (!investment) {
       throw new Error("Investment not found");
@@ -843,8 +844,17 @@ class InvestmentService {
     await investment.save();
 
     // Update transactions
-    await this.TransactionModel.updateMany(
-      { investmentId: investment._id },
+    await this.TransactionModel.updateOne(
+      {
+        transactionId: investment._id,
+      },
+      { status: "cancelled" },
+    );
+
+    await this.AdminTransactionModel.updateOne(
+      {
+        transactionId: investment._id,
+      },
       { status: "cancelled" },
     );
 
