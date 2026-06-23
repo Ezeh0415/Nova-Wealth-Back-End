@@ -1,10 +1,18 @@
+import { NotificationModel, NotificationPriority, NotificationType } from "../../../Notification/NotificationSchema";
+import Referral from "../../../Referral/Model";
+import Wallet from "../../../Wallet/WalletSchema";
 import User, { IUser } from "../../Model/UserSchema";
 import bcrypt from 'bcryptJs';
 
 export class Authentication {
     private static instance: Authentication;
     private user = User;
+    private Referral = Referral;
+    private wallet = Wallet;
+    private Notification = NotificationModel;
     private readonly SALT_ROUNDS = 10;
+    private readonly REFERRAL_BONUS = 1000;
+    private readonly MIN_DEPOSIT_FOR_BONUS = 5000;
 
     public constructor() { };
 
@@ -53,6 +61,58 @@ export class Authentication {
                     referrerUser = await this.user.findOne({
                         referralCode: referralCode.trim(),
                     }).session(session);
+
+                    if (referrerUser) {
+                        NewUser.referredBy = referrerUser._id;
+                        await NewUser.save({ session });
+
+                        //add referal model
+                        referralRecord = new this.Referral({
+                            referrer: referrerUser._id,
+                            referrerUser: NewUser._id,
+                            referralCodeUsed: referralCode.trim(),
+                            status: "pending",
+                            bonusAmount: this.REFERRAL_BONUS,
+                            minDepositRequired: this.MIN_DEPOSIT_FOR_BONUS
+                        });
+                        await referralRecord.save({ session });
+
+                        await this.Notification.create(
+                            [{
+                                user: referrerUser._id,
+                                type: NotificationType.REFERRAL,
+                                title: "New Referral!",
+                                message: `${NewUser.userName} signed up using your referral code. Bonus will be awarded after their first deposit of \[ {this.MIN_DEPOSIT_FOR_BONUS / 100}.`,
+                                priority: NotificationPriority.MEDIUM,
+                                category: NotificationType.REFERRAL,
+                            }],
+                            { session }
+                        );
+
+                        await this.Notification.create(
+                            [{
+                                user: referrerUser._id,
+                                type: NotificationType.REFERRAL,
+                                title: "Referral Bonus Available!",
+                                message: `Make your first deposit of \]{this.MIN_DEPOSIT_FOR_BONUS / 100} or more to unlock your referrer's bonus!`,
+                                priority: NotificationPriority.MEDIUM,
+                                category: NotificationType.REFERRAL,
+                            }],
+                            { session }
+                        );
+                    }
+
+                    await this.wallet.create(
+                        [{
+                            userId: NewUser._id,
+                            balance: 0,
+                            invBalance: 0,
+                            pendingWithdraw: 0,
+                            totalDeposits: 0,
+                            totalReturn: 0,
+                            pending: 0,
+                        }], { session }
+                    )
                 }
 
 

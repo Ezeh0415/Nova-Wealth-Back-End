@@ -15,7 +15,7 @@ export interface IUser extends Document {
     isActive: boolean;
     role: "admin" | "user";
     passwordChangedAt?: Date;
-    referredBy?: string | null;
+    referredBy?: string | object;
     referralCode?: string;
     referralLink?: string;
     hasMadeFirstDeposit: boolean;
