@@ -8,6 +8,9 @@ export class AppConfig {
     private _MJ_APIKEY_PUBLIC: string;
     private _MJ_APIKEY_PRIVATE: string;
     private _API_KEY: string;
+    private _FRONTEND_URL: string;
+    private _EMAIL_USER: string;
+    private _ADMIN_EMAIL_USER: string;
 
     private constructor() {
         this._port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000
@@ -16,8 +19,11 @@ export class AppConfig {
         this._JWT_ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? "";
         this._JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN ?? "";
         this._MJ_APIKEY_PUBLIC = process.env.MJ_APIKEY_PUBLIC ?? "";
-        this._MJ_APIKEY_PRIVATE =  process.env.MJ_APIKEY_PRIVATE ?? "";
+        this._MJ_APIKEY_PRIVATE = process.env.MJ_APIKEY_PRIVATE ?? "";
         this._API_KEY = process.env.API_KEY ?? "";
+        this._FRONTEND_URL = process.env.FRONTEND_URL ?? "";
+        this._EMAIL_USER = process.env.EMAIL_USER ?? "";
+        this._ADMIN_EMAIL_USER = process.env.ADMIN_EMAIL_USER ?? "";
     }
 
     public static getInstance(): AppConfig {
@@ -57,6 +63,18 @@ export class AppConfig {
 
     public get API_KEY(): string {
         return this._API_KEY;
+    }
+
+    public get FRONTEND_URL(): string {
+        return this._FRONTEND_URL;
+    }
+
+    public get EMAIL_USER(): string {
+        return this._EMAIL_USER;
+    }
+
+    public get ADMIN_EMAIL_USER(): string {
+        return this._ADMIN_EMAIL_USER;
     }
 }
 
