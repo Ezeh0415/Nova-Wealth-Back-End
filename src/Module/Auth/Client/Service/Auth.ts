@@ -9,6 +9,7 @@ import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
 import mongoose from "mongoose";
 import { TokenService } from "../../../../Middleware/jwtConfig/GetJwtToken";
 import { ResetTokenModel } from "../../Model/ResetToken";
+import { randomBytes } from "crypto";
 
 export class Authentication {
     private static instance: Authentication;
@@ -228,6 +229,41 @@ export class Authentication {
         try {
             await session.withTransaction(async () => {
                 const isExist = await this.user.findOne({ email: userData.email });
+
+                if (!isExist) {
+                    throw new Error("reset link has been sent");
+                }
+
+                const recentResetCount = await this.ResetToken.countDocuments({
+                    userId: isExist._id,
+                    createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+                })
+
+                if (recentResetCount >= 3) {
+                    throw new Error("Too many reset requests. Please try again later.")
+                }
+
+                const plainToken = await this.TokenService.getRefreshJwtToken(isExist._id, isExist.email);
+
+                const hashedToken = await bcrypt.hash(plainToken, this.SALT_ROUNDS)
+
+                await this.ResetToken.create({
+                    userId: isExist._id,
+                    token: hashedToken,
+                    expires: new Date(Date.now() + 3600000),
+                    ipAddress: userData.ipAddress, // Track request origin
+                    userAgent: userData.userAgent, // Track device/browser
+                })
+
+                const link = `${this.config.FRONTEND_URL}resetPassword?token=${plainToken}&key=${this.config.API_KEY}`
+
+                const mailSend = await this.mailjet.sendOtpEmail(isExist.email, link);
+
+                return {
+                    mailSend,
+                    expiresIn: "1 hour",
+                }
+
             })
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);

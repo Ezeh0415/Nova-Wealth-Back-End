@@ -66,7 +66,7 @@ const ResetTokenSchema = new Schema<IResetToken>(
 // ==============================
 
 // 1. TTL Index - Auto-delete expired tokens after 1 hour
-// This will automatically delete documents when createdAt + 3600 seconds passes
+// This will automatically delete documents when createdAt + 86400 seconds passes
 ResetTokenSchema.index(
     { createdAt: 1 },
     { expireAfterSeconds: 86400 } // 24 hour = 86400 seconds
