@@ -181,7 +181,7 @@ export class Authentication {
     public async Login(userData: Partial<IUser>) {
         const session = await mongoose.connection.startSession();
         try {
-            await session.withTransaction(async () => {
+            return await session.withTransaction(async () => {
                 const isExist = await this.user.findOne({
                     $or: [
                         { userName: userData.userName },
@@ -215,6 +215,7 @@ export class Authentication {
                 }
 
             })
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`login failed: ${errorMessage}`);
@@ -226,7 +227,7 @@ export class Authentication {
     public async forgotPassword(userData: Partial<IUser>) {
         const session = await mongoose.connection.startSession();
         try {
-            await session.withTransaction(async () => {
+            return await session.withTransaction(async () => {
                 //  Find user with session
                 const isExist = await this.user.findOne({
                     email: userData?.email
@@ -291,11 +292,11 @@ export class Authentication {
         }
     }
 
-    public async resetPassword(token: string, password: string, ipAddress: string, userAgent: string) {
+    public async resetPassword(token: string, password: string) {
         const session = await mongoose.connection.startSession();
 
         try {
-            await session.withTransaction(async () => {
+            return await session.withTransaction(async () => {
                 let decoded;
                 try {
                     decoded = await this.TokenService.verifyRefreshToken(token);

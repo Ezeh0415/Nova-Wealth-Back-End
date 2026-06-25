@@ -8,5 +8,5 @@ export const SignUp = z.object({
         .min(6, "Password must be at least 6 characters")
         .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
         .regex(/[0-9]/, "Password must contain at least one number"), 
-        referral: z.string()
+        referral: z.string().optional()
 })
