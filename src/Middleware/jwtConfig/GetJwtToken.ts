@@ -58,6 +58,15 @@ export class TokenService {
         }
     }
 
+    public async verifyRefreshToken(token: string): Promise<{ valid: boolean; decoded?: any }> {
+        try {
+            const decoded = jwt.verify(token, this.config.JWT_REFRESH_SECRET);
+            return { valid: true, decoded };
+        } catch (error) {
+            return { valid: false };
+        }
+    }
+
 
     public async verifyBothTokens(accessToken: string, refreshToken: string): Promise<{
         valid: boolean;

@@ -188,7 +188,7 @@ export class Authentication {
                         { userName: userData.userName },
                         { email: userData.userName }
                     ]
-                })
+                }).session(session);
 
                 if (!isExist) {
                     throw new Error("invalid username or email");
@@ -206,7 +206,7 @@ export class Authentication {
                     { _id: isExist._id },
                     { $set: { refreshToken: refreshToken } },
                     { new: true }
-                )
+                ).session(session);
 
                 const { password: _, refreshToken: __, ...safeUser } = isExist.toObject();
 
@@ -228,7 +228,7 @@ export class Authentication {
         const session = await mongoose.connection.startSession();
         try {
             await session.withTransaction(async () => {
-                const isExist = await this.user.findOne({ email: userData.email });
+                const isExist = await this.user.findOne({ email: userData.email }).session(session);
 
                 if (!isExist) {
                     throw new Error("reset link has been sent");
@@ -237,7 +237,7 @@ export class Authentication {
                 const recentResetCount = await this.ResetToken.countDocuments({
                     userId: isExist._id,
                     createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-                })
+                }).session(session);
 
                 if (recentResetCount >= 3) {
                     throw new Error("Too many reset requests. Please try again later.")
@@ -265,6 +265,32 @@ export class Authentication {
                 }
 
             })
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error(`login failed: ${errorMessage}`);
+        } finally {
+            await session.endSession();
+        }
+    }
+
+    public async resetPassword(token: string, password: string, ipAddress: string, userAgent: string) {
+        const session = await mongoose.connection.startSession();
+
+        try {
+            await session.withTransaction(async () => {
+                let decoded;
+                try {
+                    decoded = await this.TokenService.verifyRefreshToken(token);
+                } catch (error) {
+                    throw new Error("Invalid or expired reset link");
+                }
+
+                const resetToken = await this.ResetToken.find({
+                    userId: decoded.userId,
+                    used: { $in: ["", "false", null, undefined] },
+                }).sort({ createdAt: -1 });
+            })
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`login failed: ${errorMessage}`);
