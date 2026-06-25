@@ -9,7 +9,6 @@ import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
 import mongoose from "mongoose";
 import { TokenService } from "../../../../Middleware/jwtConfig/GetJwtToken";
 import { ResetTokenModel } from "../../Model/ResetToken";
-import { randomBytes } from "crypto";
 
 export class Authentication {
     private static instance: Authentication;
@@ -228,43 +227,62 @@ export class Authentication {
         const session = await mongoose.connection.startSession();
         try {
             await session.withTransaction(async () => {
-                const isExist = await this.user.findOne({ email: userData.email }).session(session);
+                //  Find user with session
+                const isExist = await this.user.findOne({
+                    email: userData?.email
+                }).session(session);
 
                 if (!isExist) {
-                    throw new Error("reset link has been sent");
+                    throw new Error("Reset link has been sent");
                 }
 
+                //  Count recent reset requests with session
                 const recentResetCount = await this.ResetToken.countDocuments({
                     userId: isExist._id,
                     createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
                 }).session(session);
 
                 if (recentResetCount >= 3) {
-                    throw new Error("Too many reset requests. Please try again later.")
+                    throw new Error("Too many reset requests. Please try again later.");
                 }
 
+                // Generate plain token
                 const plainToken = await this.TokenService.getRefreshJwtToken(isExist._id, isExist.email);
 
-                const hashedToken = await bcrypt.hash(plainToken, this.SALT_ROUNDS)
+                // Hash the token
+                const hashedToken = await bcrypt.hash(plainToken, this.SALT_ROUNDS);
 
-                await this.ResetToken.create({
+                //  Create reset token with session
+                await this.ResetToken.create(
+                    [{
+                        userId: isExist._id,
+                        token: hashedToken,
+                        expires: new Date(Date.now() + 3600000), // 1 hour
+                        ipAddress: userData.ipAddress,
+                        userAgent: userData.userAgent,
+                    }],
+                    { session } // ← REQUIRED
+                );
+
+                //  Delete old/used tokens for this user (optional cleanup)
+                await this.ResetToken.deleteMany({
                     userId: isExist._id,
-                    token: hashedToken,
-                    expires: new Date(Date.now() + 3600000),
-                    ipAddress: userData.ipAddress, // Track request origin
-                    userAgent: userData.userAgent, // Track device/browser
-                })
+                    $or: [
+                        { used: "true" },
+                        { expires: { $lt: new Date() } }
+                    ]
+                }).session(session);
 
-                const link = `${this.config.FRONTEND_URL}resetPassword?token=${plainToken}&key=${this.config.API_KEY}`
+                const link = `${this.config.FRONTEND_URL}resetPassword?token=${plainToken}&key=${this.config.API_KEY}`;
 
+                // Send email (no session needed - this is external)
                 const mailSend = await this.mailjet.sendOtpEmail(isExist.email, link);
 
                 return {
                     mailSend,
                     expiresIn: "1 hour",
-                }
-
-            })
+                };
+            });
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`login failed: ${errorMessage}`);
@@ -286,9 +304,61 @@ export class Authentication {
                 }
 
                 const resetToken = await this.ResetToken.find({
-                    userId: decoded.userId,
-                    used: { $in: ["", "false", null, undefined] },
-                }).sort({ createdAt: -1 });
+                    userId: decoded.decoded?.userId,
+                    used: { $in: ["", "false", null] },
+                })
+                    .sort({ createdAt: -1 })
+                    .session(session);
+
+                let resetTokens;
+
+                for (const token of resetToken) {
+                    if (new Date(token.expires).getTime() > Date.now()) {
+                        resetTokens = token
+                        break;
+                    }
+                }
+
+                if (!resetTokens) {
+                    throw new Error("invalid or expired reset link");
+                }
+
+                const isValid = await bcrypt.compare(decoded.decoded?.token, resetTokens.token);
+
+                if (!isValid) {
+                    throw new Error("Invalid reset token");
+                }
+
+                const user = await this.user.findById(decoded.decoded?.userId).session(session);
+
+                if (!user) {
+                    throw new Error("error getting user");
+                }
+
+                const isSamePassword = await bcrypt.compare(password, user.password);
+
+                if (isSamePassword) {
+                    throw new Error("you can not use old password");
+                }
+
+                const hashPassword = await bcrypt.hash(password, this.SALT_ROUNDS);
+
+                user.password = hashPassword;
+                user.passwordChangedAt = new Date(); // Track when password was changed
+                await user.save({ session });
+
+                // 9. MARK TOKEN AS USED
+                if (resetTokens) {
+                    resetTokens.used = true;
+                    resetTokens.usedAt = new Date();
+                    await resetTokens.save({ session });
+                }
+
+                await this.mailjet.sendPasswordChangeEmail(user.email, user.userName, user.email);
+
+                return {
+                    message: "password has been reset successfully"
+                };
             })
 
         } catch (error) {
