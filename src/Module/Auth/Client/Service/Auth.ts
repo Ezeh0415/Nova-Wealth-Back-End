@@ -207,7 +207,7 @@ export class Authentication {
                     { new: true }
                 ).session(session);
 
-                const { password: _, refreshToken: __, ...safeUser } = isExist.toObject();
+                const { password: _,  ...safeUser } = isExist.toObject();
 
                 return {
                     safeUser,

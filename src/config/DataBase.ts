@@ -22,7 +22,7 @@ export class Database {
     }
 
     private getConnectionString(): string {
-        return process.env.DB_URL || 'mongodb://localhost:27017/tsAlthword';
+        return process.env.DB_URL || 'mongodb://localhost:27017/TSAlthWORLD';
     }
 
     private getConnectionOptions(): mongoose.ConnectOptions {
