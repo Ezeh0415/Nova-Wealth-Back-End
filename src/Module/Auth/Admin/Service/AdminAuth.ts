@@ -74,4 +74,45 @@ export class AdminAuth {
             await session.endSession();
         }
     }
+
+    public async adminLogin(userData: Partial<IUser>) {
+        const session = await mongoose.connection.startSession();
+
+        try {
+            return await session.withTransaction(async () => {
+                const isExist = await this.user.findOne({ email: userData.email as string }).session(session);
+
+                if (!isExist) {
+                    throw new Error("invalid user cridentials");
+                }
+
+                const isPasswordCorrect = await bcrypt.compare(userData.password as string, isExist.password);
+
+                if (!isPasswordCorrect) {
+                    throw new Error("password dosen`t match");
+                }
+
+                const accessToken = await this.TokenService.getJwtToken(isExist?._id, isExist?.email);
+                const refreshToken = await this.TokenService.getRefreshJwtToken(isExist?._id, isExist?.email);
+
+                await this.user.findOneAndUpdate(
+                    { email: isExist?.email },
+                    { $set: { refreshToken: refreshToken } }
+                ).session(session);
+
+                const { password: _, ...safeUser } = isExist.toObject();
+
+                return {
+                    safeUser,
+                    accessToken
+                }
+
+            })
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error(`Signup transaction failed: ${errorMessage}`);
+        } finally {
+            await session.endSession();
+        }
+    }
 }
