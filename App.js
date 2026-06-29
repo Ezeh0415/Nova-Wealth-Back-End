@@ -148,7 +148,7 @@ const apiLimiter = rateLimit({
   },
 });
 
-// Uncomment the line below to enable rate limiting on all /api routes
+
 app.use("/api", apiLimiter);
 
 // ======================

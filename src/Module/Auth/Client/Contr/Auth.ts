@@ -24,9 +24,23 @@ export class AuthContr {
 
     async SignUp(req: Request, res: Response): Promise<void> {
         try {
-            const validetedData = await SignUp.parse(req.body);
+            const ipAddress = req.ip;
+            const userAgent = req.headers["user-agent"];
+            const validateData = await SignUp.parse(req.body);
 
-            const result = await this.Authentication.SignUp(validetedData);
+            const userData = {
+                fullName: validateData.fullName,
+                userName: validateData.userName,
+                email: validateData.email,
+                password: validateData.password,
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+            }
+
+
+            console.log(userData)
+
+            const result = await this.Authentication.SignUp(userData);
 
             res.status(201).json({
                 success: true,

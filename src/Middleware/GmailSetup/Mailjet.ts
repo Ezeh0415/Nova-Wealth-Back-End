@@ -33,9 +33,9 @@ export class MailSender {
       await this.mailjetClient
         .get("user")
         .request();
-      console.log("✅ Mail server is ready - Connected successfully");
+      console.log(" Mail server is ready - Connected successfully");
     } catch (error: any) {
-      console.error("❌ Mail server error:", error.statusCode, error.message);
+      console.error(" Mail server error:", error.statusCode, error.message);
     }
   }
 
@@ -62,10 +62,10 @@ export class MailSender {
           ],
         });
 
-      console.log(`✅ Email sent to ${to}`);
+      console.log(` Email sent to ${to}`);
       return result;
     } catch (error: any) {
-      console.error("❌ Failed to send email:", error.message);
+      console.error(" Failed to send email:", error.message);
       throw error;
     }
   }

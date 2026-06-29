@@ -116,11 +116,11 @@ const UserSchema = new Schema<IUser>(
         },
         ipAddress: {
             type: String,
-            required: true,
+            required: false,
         },
         userAgent: {
             type: String,
-            required: true,
+            required: false,
         },
         softDelete: {
             type: String,

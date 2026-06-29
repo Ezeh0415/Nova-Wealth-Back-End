@@ -1,3 +1,7 @@
+import dotenv from 'dotenv';
+
+dotenv.config();
+
 export class AppConfig {
     private static instance: AppConfig;
     private _port: number;

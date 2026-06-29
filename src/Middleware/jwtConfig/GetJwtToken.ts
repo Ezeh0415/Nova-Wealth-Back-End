@@ -22,8 +22,7 @@ export class TokenService {
         if (!jwtKey) {
             throw new Error("JWT_TOKEN_KEY is not defined");
         }
-
-        const expiresIn = this.config.JWT_REFRESH_SECRET ?? "7d";
+        const expiresIn = this.config.JWT_ACCESS_EXPIRES_IN ?? "7d";
         const token = jwt.sign(
             { userId, email },
             jwtKey as jwt.Secret,
@@ -34,7 +33,7 @@ export class TokenService {
     }
 
     public async getRefreshJwtToken(userId: object, email: string): Promise<string> {
-        const jwtKey = this.config.JWT_ACCESS_EXPIRES_IN;
+        const jwtKey = this.config.JWT_REFRESH_SECRET;
         if (!jwtKey) {
             throw new Error("JWT_REFRESH_TOKEN_KEY is not defined");
         }
