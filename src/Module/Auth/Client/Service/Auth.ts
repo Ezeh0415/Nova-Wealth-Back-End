@@ -38,7 +38,6 @@ export class Authentication {
 
     public async SignUp(userData: Partial<IUser>) {
 
-        console.log(userData)
 
         try {
 
@@ -217,6 +216,7 @@ export class Authentication {
 
     public async forgotPassword(userData: Partial<IUser>) {
 
+        console.log(userData)
         try {
             //  Find user with session
             const isExist = await this.user.findOne({

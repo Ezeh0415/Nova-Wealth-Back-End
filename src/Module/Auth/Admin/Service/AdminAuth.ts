@@ -25,94 +25,88 @@ export class AdminAuth {
     }
 
     public async adminSignup(userData: Partial<IUser>) {
-        const session = await mongoose.connection.startSession();
 
         try {
-            return await session.withTransaction(async () => {
-                const isExist = await this.user.findOne({ email: userData.email }).session(session);
 
-                if (isExist) {
-                    throw new Error("credentials Already in use");
-                }
+            const isExist = await this.user.findOne({ email: userData.email });
 
-                const hashedPassword = await bcrypt.hash(userData.password as string, this.SALT_ROUNDS)
+            if (isExist) {
+                throw new Error("credentials Already in use");
+            }
 
-                const newUser = new this.user({
-                    fullName: userData.fullName,
-                    userName: userData.userName,
-                    email: userData.email,
-                    password: hashedPassword,
-                    role: "admin",
-                    KycStatus: "verified",
-                    referralCode: userData.email,
-                    referralLink: userData.email,
-                    ipAddress: userData.ipAddress,
-                    userAgent: userData.userAgent,
-                });
-                await newUser.save({ session });
+            const hashedPassword = await bcrypt.hash(userData.password as string, this.SALT_ROUNDS)
 
-                const token = await this.TokenService.getJwtToken(newUser._id, newUser.email);
-                const refreshToken = await this.TokenService.getRefreshJwtToken(newUser._id, newUser.email);
+            const newUser = new this.user({
+                fullName: userData.fullName,
+                userName: userData.userName,
+                email: userData.email,
+                password: hashedPassword,
+                role: "admin",
+                KycStatus: "verified",
+                referralCode: userData.email,
+                referralLink: userData.email,
+                ipAddress: userData.ipAddress,
+                userAgent: userData.userAgent,
+            });
+            await newUser.save();
 
-                await this.user.findByIdAndUpdate(
-                    newUser._id,
-                    { $set: { refreshToken: refreshToken } },
-                    { session, new: true }
-                );
+            const token = await this.TokenService.getJwtToken(newUser._id, newUser.email);
+            const refreshToken = await this.TokenService.getRefreshJwtToken(newUser._id, newUser.email);
 
-                const { password: _, ...safeUser } = newUser.toObject();
+            await this.user.findByIdAndUpdate(
+                newUser._id,
+                { $set: { refreshToken: refreshToken } },
+                { new: true }
+            );
 
-                return {
-                    safeUser,
-                    token
-                }
-            })
+            const { password: _, ...safeUser } = newUser.toObject();
+
+            return {
+                safeUser,
+                token
+            }
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`Signup transaction failed: ${errorMessage}`);
-        } finally {
-            await session.endSession();
         }
     }
 
     public async adminLogin(userData: Partial<IUser>) {
-        const session = await mongoose.connection.startSession();
 
         try {
-            return await session.withTransaction(async () => {
-                const isExist = await this.user.findOne({ email: userData.email as string }).session(session);
 
-                if (!isExist) {
-                    throw new Error("invalid user cridentials");
-                }
+            const isExist = await this.user.findOne({ email: userData.email as string });
 
-                const isPasswordCorrect = await bcrypt.compare(userData.password as string, isExist.password);
+            if (!isExist) {
+                throw new Error("invalid user cridentials");
+            }
 
-                if (!isPasswordCorrect) {
-                    throw new Error("password dosen`t match");
-                }
+            const isPasswordCorrect = await bcrypt.compare(userData.password as string, isExist.password);
 
-                const accessToken = await this.TokenService.getJwtToken(isExist?._id, isExist?.email);
-                const refreshToken = await this.TokenService.getRefreshJwtToken(isExist?._id, isExist?.email);
+            if (!isPasswordCorrect) {
+                throw new Error("password dosen`t match");
+            }
 
-                await this.user.findOneAndUpdate(
-                    { email: isExist?.email },
-                    { $set: { refreshToken: refreshToken } }
-                ).session(session);
+            const accessToken = await this.TokenService.getJwtToken(isExist?._id, isExist?.email);
+            const refreshToken = await this.TokenService.getRefreshJwtToken(isExist?._id, isExist?.email);
 
-                const { password: _, ...safeUser } = isExist.toObject();
+            await this.user.findOneAndUpdate(
+                { email: isExist?.email },
+                { $set: { refreshToken: refreshToken } }
+            );
 
-                return {
-                    safeUser,
-                    accessToken
-                }
+            const { password: _, ...safeUser } = isExist.toObject();
 
-            })
+            return {
+                safeUser,
+                accessToken
+            }
+
+
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`Signup transaction failed: ${errorMessage}`);
-        } finally {
-            await session.endSession();
         }
     }
 }
