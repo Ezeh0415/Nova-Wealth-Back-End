@@ -16,8 +16,8 @@ export enum PaymentStatus {
 }
 
 export interface ITransaction extends Document {
-    userId: object | string;
-    transactionId: object | string;
+    userId: object ;
+    transactionId: object ;
     type: PaymentType;
     currency: string;
     requestedAmount: number;

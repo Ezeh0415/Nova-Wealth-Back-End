@@ -131,6 +131,11 @@ export class MailSender {
     return this.dobuleSendEmail(to, `deposit of ${requestedAmount} ${currency.toUpperCase()} is pending confirmation`, html);
   }
 
+  public async sendUserWithdrawal(to: string, userId: object | string, type: string, currency: string, requestedAmount: number, status: string, createdAt: Date, userEmail: string, userFullName: string): Promise<any> {
+    const html = this.userDeposit(userId, type, currency, requestedAmount, status, createdAt, userEmail, userFullName,);
+    return this.dobuleSendEmail(to, `Withdrawal of ${requestedAmount} ${currency.toUpperCase()} is pending confirmation`, html);
+  }
+
   // registration  Email templates
   private welcomeTemplate(fullName: string, link: string): string {
     return `
