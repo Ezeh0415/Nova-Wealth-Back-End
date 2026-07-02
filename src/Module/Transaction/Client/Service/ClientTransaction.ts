@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
-import { MailSender } from "../../../Middleware/GmailSetup/Mailjet";
-import User from "../../Auth/Model/UserSchema";
-import { NotificationModel, NotificationPriority, NotificationType } from "../../Notification/NotificationSchema";
-import Wallet from "../../Wallet/WalletSchema";
-import AdminTransaction, { AdminTransactionStatus, AdminTransactionType } from "../Model/Admin/AdminTransction";
-import TransactionModel, {  PaymentStatus, PaymentType } from "../Model/Client/TransactionSchema";
+import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
+import User from "../../../Auth/Model/UserSchema";
+import { NotificationModel, NotificationPriority, NotificationType } from "../../../Notification/NotificationSchema";
+import Wallet from "../../../Wallet/WalletSchema";
+import AdminTransaction, { AdminTransactionStatus, AdminTransactionType } from "../../Model/Admin/AdminTransction";
+import TransactionModel, {  PaymentStatus, PaymentType } from "../../Model/Client/TransactionSchema";
 
 interface IUserDeposit {
     userId: string;

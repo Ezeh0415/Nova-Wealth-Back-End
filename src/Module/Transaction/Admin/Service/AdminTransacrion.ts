@@ -1,9 +1,9 @@
-import { MailSender } from "../../../Middleware/GmailSetup/Mailjet";
-import User from "../../Auth/Model/UserSchema";
-import { NotificationModel, NotificationType } from "../../Notification/NotificationSchema";
-import Wallet from "../../Wallet/WalletSchema";
-import AdminTransaction, { AdminTransactionConfirmation, AdminTransactionStatus } from "../Model/Admin/AdminTransction";
-import TransactionModel, { PaymentStatus } from "../Model/Client/TransactionSchema";
+import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
+import User from "../../../Auth/Model/UserSchema";
+import { NotificationModel, NotificationType } from "../../../Notification/NotificationSchema";
+import Wallet from "../../../Wallet/WalletSchema";
+import AdminTransaction, { AdminTransactionConfirmation, AdminTransactionStatus } from "../../Model/Admin/AdminTransction";
+import TransactionModel, { PaymentStatus } from "../../Model/Client/TransactionSchema";
 
 interface IDeposit {
     userId: string;
@@ -30,7 +30,7 @@ export class AdminTransction {
     }
 
 
-    public async AdminGetTranction(page: number = 1, limit: number = 20) {
+    public async AdminGetTransaction(page: number = 1, limit: number = 20) {
         const skip = (page - 1) * limit;
 
         const transactions = await this.AdminSchema.find({})
