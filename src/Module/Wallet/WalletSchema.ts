@@ -11,6 +11,7 @@ export interface IWallet extends Document {
   pendingInvestment: number;
   invBalance: number;
   pendingWithdraw: number;
+  totalWithdrawals: number;
   totalDeposits: number;
   totalReturn: number;
   pending: number;
@@ -56,6 +57,11 @@ const WalletSchema = new Schema<IWallet>(
       min: 0,
     },
     totalDeposits: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    totalWithdrawals: {
       type: Number,
       default: 0,
       min: 0,
@@ -134,16 +140,16 @@ WalletSchema.statics.deductBalance = async function (userId: string, amount: num
   if (amount < 0) {
     throw new Error("Amount must be positive");
   }
-  
+
   const wallet = await this.findOne({ userId });
   if (!wallet) {
     throw new Error("Wallet not found");
   }
-  
+
   if (wallet.balance < amount) {
     throw new Error("Insufficient balance");
   }
-  
+
   return this.findOneAndUpdate(
     { userId },
     { $inc: { balance: -amount } },
