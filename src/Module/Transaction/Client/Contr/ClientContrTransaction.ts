@@ -3,6 +3,7 @@ import { AuthRequest } from "../../../../config/JWTAUth";
 import { userDeposit } from "../ZodValidation/userDeposit";
 import { ClientTransaction } from "../Service/ClientTransaction";
 import { ErrorHandler } from "../../../../Utili/ZodError/ZodError";
+import { userWithdrawal } from "../ZodValidation/userWithdrawal";
 
 export class clientContrTransaction {
     private static instance: clientContrTransaction;
@@ -21,20 +22,57 @@ export class clientContrTransaction {
     };
 
     public async userDeposit(req: AuthRequest, res: Response): Promise<void> {
-        const validateData = userDeposit.parse(req.body)
-        const { amount, paymentType } = validateData;
-
-        const userId = req.user.userId;
-
-        const userData = {
-            userId: userId,
-            amount: amount,
-            currency: paymentType,
-        };
 
         try {
+            const validateData = userDeposit.parse(req.body)
+            const { amount, paymentType } = validateData;
+
+            const userId = req.user.userId;
+
+            const userData = {
+                userId: userId,
+                amount: amount,
+                currency: paymentType,
+            };
+
             const data = await this.TransactionService.userDeposit(userData);
             res.status(200).json(data);
+            return;
+        } catch (error) {
+            if (ErrorHandler.handleZodError(res, error)) {
+                return;
+            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            res.status(500).json({
+                success: false,
+                message: 'internal server error',
+                error: errorMessage,
+            })
+
+            return;
+        }
+    }
+
+    public async userWithdrawal(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const validateData = userWithdrawal.parse(req.body);
+
+            const { amount, paymentType, walletAddress } = validateData;
+            const currency = paymentType;
+            const userId = req.user.userId;
+
+            const userData = {
+                userId: userId,
+                amount: amount,
+                currency: currency,
+                walletAddress: walletAddress,
+            };
+
+            const result = await this.TransactionService.userWithdrawal(userData);
+
+            res.status(200).json(result);
+
             return;
         } catch (error) {
             if (ErrorHandler.handleZodError(res, error)) {
