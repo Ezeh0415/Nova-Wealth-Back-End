@@ -37,9 +37,6 @@ export class AuthContr {
                 userAgent: userAgent,
             }
 
-
-            console.log(userData)
-
             const result = await this.Authentication.SignUp(userData);
 
             res.status(201).json({
