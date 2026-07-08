@@ -30,7 +30,12 @@ export class GetDashboardContr {
         }
     }
 
-    public async getInvestPlan(req:Request,res:Response) {
-        
+    public async getInvestPlan(req: Request, res: Response): Promise<void> {
+        try {
+            const investPlan = await this.serviceDashBoard.getInvestPlan();
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            res.status(500).json(errorMessage);
+        }
     }
 }
