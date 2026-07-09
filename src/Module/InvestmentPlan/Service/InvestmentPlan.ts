@@ -14,22 +14,10 @@ export class investPlanService {
         return investPlanService.instance;
     }
 
-    public async createInvestPan(userData: IInvestmentPlan) {
+    public async createInvestPan(userData: Partial<IInvestmentPlan>) {
         try {
-            const { planId, name, minAmount, maxAmount, color, iconName, roi, duration, description, isActive, features } = userData;
-            const investPlan = await this.investPlan.create({
-                planId,
-                name,
-                minAmount,
-                maxAmount,
-                color,
-                iconName,
-                roi,
-                duration,
-                description,
-                isActive,
-                features,
-            });
+
+            const investPlan = await this.investPlan.create(userData);
             return {
                 success: true,
                 message: "Investment Plan Created Successfully",

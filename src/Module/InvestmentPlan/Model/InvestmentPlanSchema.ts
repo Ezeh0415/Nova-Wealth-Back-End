@@ -22,9 +22,7 @@ export interface IInvestmentPlan extends Document {
     description: string;
     features: string[];
     isActive: boolean;
-    order: number;
-    createdAt: Date;
-    updatedAt: Date;
+    order?: number | undefined;
 }
 
 // ==================== SCHEMA ====================
