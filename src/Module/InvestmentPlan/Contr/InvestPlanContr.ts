@@ -22,22 +22,7 @@ export class InvestPlanContr {
 
     public async CreateInvestPlan(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const validateData = CreateInvestPlan.parse(req.body);
-
-            const userData = {
-                planId: validateData.planId,
-                name: validateData.name,
-                minAmount: validateData.minAmount,
-                maxAmount: validateData.maxAmount,
-                color: validateData.color,
-                iconName: validateData.iconName,
-                roi: validateData.roi,
-                duration: validateData.duration,
-                description: validateData.description,
-                isActive: validateData.isActive,
-                features: validateData.features,
-                order: validateData.order,
-            }
+            const userData = CreateInvestPlan.parse(req.body);
 
             const newInvestmentPlan = await this.investPlanService.createInvestPan(userData);
 
@@ -46,6 +31,51 @@ export class InvestPlanContr {
             return;
 
 
+        } catch (error) {
+            if (ErrorHandler.handleZodError(res, error)) {
+                return;
+            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            res.status(500).json({
+                success: false,
+                message: 'internal server error',
+                error: errorMessage,
+            })
+
+            return;
+        }
+    }
+
+    public async updateInvestPlan(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            const userData = CreateInvestPlan.parse(req.body);
+            const updateInvestPlan = await this.investPlanService.updateInvestmentPlan(id as string, userData);
+            res.status(200).json(updateInvestPlan);
+            return;
+        } catch (error) {
+            if (ErrorHandler.handleZodError(res, error)) {
+                return;
+            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            res.status(500).json({
+                success: false,
+                message: 'internal server error',
+                error: errorMessage,
+            })
+
+            return;
+        }
+    }
+
+    public async DeleteInvestPlan(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const { id } = req.params;
+            const deleteInvestPlan = await this.investPlanService.DeleteInvestmentPlan(id as string);
+            res.status(200).json(deleteInvestPlan);
+            return;
         } catch (error) {
             if (ErrorHandler.handleZodError(res, error)) {
                 return;

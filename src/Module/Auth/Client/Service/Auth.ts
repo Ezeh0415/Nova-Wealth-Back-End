@@ -1,7 +1,7 @@
 import { AppConfig } from "../../../../config/Config";
-import { NotificationModel, NotificationPriority, NotificationType } from "../../../Notification/NotificationSchema";
-import Referral from "../../../Referral/Model";
-import Wallet from "../../../Wallet/WalletSchema";
+import { NotificationModel, NotificationPriority, NotificationType } from "../../../Notification/Model/NotificationSchema";
+import Referral from "../../../Referral/Model/Model";
+import Wallet from "../../../Wallet/Model/WalletSchema";
 import User, { IUser } from "../../Model/UserSchema";
 import bcrypt from 'bcryptJs';
 import { nanoid } from "nanoid";

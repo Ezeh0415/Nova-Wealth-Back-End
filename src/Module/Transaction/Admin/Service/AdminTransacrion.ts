@@ -1,7 +1,7 @@
 import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
 import User from "../../../Auth/Model/UserSchema";
-import { NotificationModel, NotificationType } from "../../../Notification/NotificationSchema";
-import Wallet from "../../../Wallet/WalletSchema";
+import { NotificationModel, NotificationType } from "../../../Notification/Model/NotificationSchema";
+import Wallet from "../../../Wallet/Model/WalletSchema";
 import AdminTransaction, { AdminTransactionConfirmation, AdminTransactionStatus } from "../../Model/Admin/AdminTransction";
 import TransactionModel, { PaymentStatus } from "../../Model/Client/TransactionSchema";
 

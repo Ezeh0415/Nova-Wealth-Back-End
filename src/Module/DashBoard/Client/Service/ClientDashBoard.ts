@@ -1,9 +1,9 @@
 import User from "../../../Auth/Model/UserSchema";
 import Investment from "../../../Investment/Model/InvestmentSchema";
 import InvestmentPlan from "../../../InvestmentPlan/Model/InvestmentPlanSchema";
-import { NotificationModel } from "../../../Notification/NotificationSchema";
+import { NotificationModel } from "../../../Notification/Model/NotificationSchema";
 import TransactionModel from "../../../Transaction/Model/Client/TransactionSchema";
-import Wallet from "../../../Wallet/WalletSchema";
+import Wallet from "../../../Wallet/Model/WalletSchema";
 
 export class ClientDashboard {
     private static instance: ClientDashboard;
