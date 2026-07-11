@@ -23,6 +23,19 @@ export class CryptoWalletService {
         return CryptoWalletService.instance;
     }
 
+    public async getCryptoWallets() {
+        try {
+            const cryptoWallet = await this.CryptoWallet.find();
+
+            return cryptoWallet;
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new Error(`Failed to Get crypto wallets: ${error.message}`);
+            }
+            throw new Error('Failed to Get crypto wallets: Unknown error');
+        }
+    }
+
     public async createCryptoWallet(userData: ICryptoWallet) {
         try {
             const cryptoWallet = new this.CryptoWallet({

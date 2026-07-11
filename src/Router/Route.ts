@@ -10,6 +10,8 @@ import { TokenAuth } from "../config/JWTAUth";
 import { InvestPlanContr } from "../Module/InvestmentPlan/Contr/InvestPlanContr";
 import { AdminGetDashBoardContr } from "../Module/DashBoard/Admin/Contr/AdminGetDashboard";
 import { UpdateNotificationContr } from "../Module/Notification/Contr/UpdateNotificationContr";
+import { CryptoWalletContr } from "../Module/CryptoWallet/contr/CryptoWalletContr";
+import { userUpdateContr } from "../Module/UserUpdate/Contr/userUpdateContr";
 
 const router = Router();
 const apiKey = ApiKey.getInstance();
@@ -22,6 +24,8 @@ const AdminTransaction = AdminTransactionContr.getInstance();
 const investPlanContr = InvestPlanContr.getInstance();
 const adminGetDashBoardContr = AdminGetDashBoardContr.getInstance();
 const updateNotificationContr = UpdateNotificationContr.getInstance();
+const cryptoWalletContr = CryptoWalletContr.getInstance();
+const UserUpdateContr = userUpdateContr.getInstance();
 
 // client auth section
 router.post("/signup", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.SignUp(req, res));
@@ -66,6 +70,16 @@ router.post("/Transactions", apiKey.RequireApiKey.bind(apiKey), Authenticate.aut
 router.post("/confirmDeposit", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.confirmDeposit(req, res));
 router.post("/cancleDeposit", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.cancelDeposit(req, res));
 router.post("/confirmWithdraw", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.confirmWithdrawal(req, res));
+
+// ADMIN CRYPTO WALLET SECTION
+router.get("/getWallets", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.getCryptoWallet(req, res));
+router.post("/addWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.createCryptoWallet(req, res));
+router.post("/updateWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.updateCryptoWallet(req, res));
+router.post("/deleteWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.deleteCryptoWallet(req, res));
+
+// USER UPDATE
+router.post("/getAdminUser", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => UserUpdateContr.AdminGetUser(req, res))
+router.post("/updateFile", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => UserUpdateContr.AdminUpdateUser(req, res));
 
 
 export default router;
