@@ -27,9 +27,9 @@ export class UpdateNotification {
             };
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to delete investment plan: ${error.message}`);
+                throw new Error(`Failed to update notification: ${error.message}`);
             }
-            throw new Error('Failed to delete investment plan: Unknown error');
+            throw new Error('Failed to update notification : Unknown error');
         }
     }
 
@@ -50,9 +50,9 @@ export class UpdateNotification {
             };
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to delete investment plan: ${error.message}`);
+                throw new Error(`Failed to update notification: ${error.message}`);
             }
-            throw new Error('Failed to delete investment plan: Unknown error');
+            throw new Error('Failed to update notification: Unknown error');
         }
     }
 }
