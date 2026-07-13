@@ -28,6 +28,7 @@ export interface IInvestment extends Document {
     investmentEndDate: Date | null;
     description: string;
     investmentStatus: InvestmentStatus;
+    cancelledAt: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -85,6 +86,9 @@ const InvestmentSchema = new Schema<IInvestment>(
             default: InvestmentStatus.PENDING,
             index: true,
         },
+        cancelledAt: {
+            type: Date,
+        }
     },
     {
         timestamps: true,

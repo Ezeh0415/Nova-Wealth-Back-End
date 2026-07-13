@@ -14,6 +14,7 @@ import { CryptoWalletContr } from "../Module/CryptoWallet/contr/CryptoWalletCont
 import { userUpdateContr } from "../Module/UserUpdate/Contr/userUpdateContr";
 import { kycContr } from "../Module/Kyc/Client/Contr/KycContr";
 import { AdminKycContr } from "../Module/Kyc/Admin/Contr/KycAdminContr";
+import { ClientInvestmentContr } from "../Module/Investment/Client/Contr/Clientnvestment";
 
 const router = Router();
 const apiKey = ApiKey.getInstance();
@@ -30,6 +31,7 @@ const cryptoWalletContr = CryptoWalletContr.getInstance();
 const UserUpdateContr = userUpdateContr.getInstance();
 const KycContr = kycContr.getInstance();
 const adminKycContr = AdminKycContr.getInstance();
+const clientInvestmentContr = ClientInvestmentContr.getInstance();
 
 // client auth section
 router.post("/signup", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.SignUp(req, res));
@@ -57,6 +59,8 @@ router.post("/createPlan", apiKey.RequireApiKey.bind(apiKey), Authenticate.authe
 router.put("/updatePlan/:id", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.updateInvestPlan(req, res));
 router.delete("/deletePlan/:id", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.DeleteInvestPlan(req, res));
 
+// INVESTMENT SECTION
+router.post("/invest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => clientInvestmentContr.invest(req, res));
 
 
 // 

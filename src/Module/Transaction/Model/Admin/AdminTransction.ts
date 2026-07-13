@@ -15,6 +15,7 @@ export enum AdminTransactionStatus {
     COMPLETED = "completed",
     FAILED = "failed",
     CANCELLED = "cancelled",
+    ACTIVE = "active",
 }
 
 export enum AdminTransactionConfirmation {
@@ -37,6 +38,7 @@ export interface IAdminTransaction extends Document {
     currency: string;
     walletAddress: string | null;
     isConfirmed: AdminTransactionConfirmation;
+    investmentType: string,
     createdAt: Date;
     updatedAt: Date;
 }
@@ -101,6 +103,10 @@ const AdminTransactionSchema = new Schema<IAdminTransaction>(
             default: AdminTransactionConfirmation.PENDING,
             index: true, // ✅ Index for confirmation status
         },
+        investmentType: {
+            type: String,
+            index: true,
+        }
     },
     {
         timestamps: true,

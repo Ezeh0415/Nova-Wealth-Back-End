@@ -1,5 +1,21 @@
 import Mailjet from "node-mailjet";
 import { AppConfig } from "../../config/Config";
+import mongoose from "mongoose";
+
+export interface IInvestEmail {
+  _id: string | mongoose.Types.ObjectId,
+  userId: string | mongoose.Types.ObjectId,
+  amount: number,
+  roi: number,
+  TotalReturns: number,
+  lastRoiAt: Date | null,
+  investmentType: string,
+  investmentStatus: string,
+  investmentStartDate: Date,
+  createdAt: Date,
+  formatType: string,
+  appName: string,
+}
 
 export class MailSender {
   private static instance: MailSender;
@@ -144,6 +160,11 @@ export class MailSender {
   public async confirmWithdrawal(to: string, userId: object | string, type: string, currency: string, creditedAmount: number, status: string, creditedAt: Date, userEmail: string, userFullName: string, transactionId: string): Promise<any> {
     const html = this.AdminWithdrawalConfirm(userId, type, currency, creditedAmount, status, creditedAt, userEmail, userFullName, transactionId);
     return this.dobuleSendEmail(to, `deposit of ${creditedAmount} ${currency.toUpperCase()} has been confirmed!`, html)
+  }
+
+  public async Investment(to: string, subject: string, userData: IInvestEmail): Promise<string> {
+    const html = this.investmentConfirmationTemplate(userData);
+    return this.dobuleSendEmail(to, subject, html)
   }
 
   // registration  Email templates
@@ -1133,7 +1154,7 @@ export class MailSender {
   `;
   }
 
-  private AdminWithdrawalConfirm(userId: object | string, type: string, currency: string, creditedAmount: number, status: string, creditedAt: Date, userEmail: string, userFullName: string, transactionId: string,  appName: string = "ALTHWORLD-GLOBAL"): string {
+  private AdminWithdrawalConfirm(userId: object | string, type: string, currency: string, creditedAmount: number, status: string, creditedAt: Date, userEmail: string, userFullName: string, transactionId: string, appName: string = "ALTHWORLD-GLOBAL"): string {
     const depositTime = new Date(creditedAt).toLocaleString();
     const amountInDollars = (creditedAmount / 100).toFixed(2);
     const displayTransactionId =
@@ -1259,6 +1280,181 @@ export class MailSender {
     </html>
   `;
   }
+
+  private investmentConfirmationTemplate(userData: IInvestEmail): string {
+    const {
+      _id,
+      userId,
+      amount,
+      roi,
+      TotalReturns = 0,
+      lastRoiAt,
+      investmentType,
+      investmentStatus,
+      investmentStartDate,
+      createdAt,
+      formatType,
+      appName = "ALTHWORLD-GLOBAL"
+    } = userData;
+
+    // Format dates
+    const startDate = new Date(investmentStartDate);
+    const createdDate = new Date(createdAt);
+
+    const formatDate = (date: Date) =>
+      date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+    const formatDateTime = (date: Date) => date.toLocaleString();
+
+    // Calculate investment metrics
+    const totalReturnsAmount = Number(TotalReturns) || 0;
+    const amountInDollars = (amount / 100).toFixed(2);
+    const returnsInDollars = (totalReturnsAmount / 100).toFixed(2);
+    const totalValueInDollars = ((amount + totalReturnsAmount) / 100).toFixed(2);
+
+    // Generate investment ID
+    const investmentId =
+      _id?.toString().slice(-8) ||
+      userId.toString().slice(-8) + Date.now().toString().slice(-6);
+
+    // Format investment type
+    const formattedType =
+      investmentType.charAt(0).toUpperCase() + investmentType.slice(1);
+
+    // Helper function for table rows
+    const createTableRow = (label: string, value: string, valueStyles = "") => `
+    <tr>
+      <td style="padding: 10px 0; color: #6b7280; font-size: 15px; border-top: 1px solid #f3f4f6;">${label}</td>
+      <td style="padding: 10px 0; color: #1f2937; text-align: right; border-top: 1px solid #f3f4f6; ${valueStyles}">${value}</td>
+    </tr>
+  `;
+
+    // Generate table rows
+    const detailsRows = [
+      createTableRow("Plan Type", formattedType, "font-weight: 600; text-transform: capitalize;"),
+      createTableRow("Start Date", formatDate(startDate)),
+      createTableRow("Total Value", `$${totalValueInDollars}`, "color: #667eea; font-weight: 700;"),
+      createTableRow("Last ROI Update", lastRoiAt ? formatDateTime(new Date(lastRoiAt)) : "Not yet calculated")
+    ].join("");
+
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Investment ${formatType || formattedType} - ${appName}</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: linear-gradient(135deg, #667eea20, #764ba220);">
+      
+      <!-- Main Container -->
+      <div style="max-width: 550px; margin: 30px auto; background: white; border-radius: 28px; overflow: hidden; box-shadow: 0 30px 60px -15px rgba(102, 126, 234, 0.4); border: 1px solid rgba(102, 126, 234, 0.1);">
+        
+        <!-- Purple Gradient Header -->
+        <div style="background: linear-gradient(145deg, #667eea, #764ba2); padding: 40px 30px; text-align: center; position: relative;">
+          <div style="position: absolute; top: -40px; right: -40px; width: 150px; height: 150px; background: rgba(255,255,255,0.1); border-radius: 50%;"></div>
+          <div style="position: absolute; bottom: -40px; left: -40px; width: 180px; height: 180px; background: rgba(255,255,255,0.08); border-radius: 50%;"></div>
+          
+          <div style="width: 80px; height: 80px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); border: 3px solid rgba(255,255,255,0.3);">
+            <span style="font-size: 38px;">📈</span>
+          </div>
+          
+          <h1 style="margin: 0; color: white; font-size: 32px; font-weight: 700; letter-spacing: -0.5px;">Investment Activated!</h1>
+          <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0; font-size: 18px;">Your ${formattedType} Plan</p>
+        </div>
+        
+        <!-- Content -->
+        <div style="padding: 35px 30px;">
+          
+          <!-- Investment Summary Card -->
+          <div style="background: linear-gradient(145deg, #f5f0ff, #ffffff); border-radius: 24px; padding: 25px; margin-bottom: 30px; border: 1px solid #e0d7ff; box-shadow: 0 10px 25px -8px rgba(102, 126, 234, 0.15);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <span style="background: #667eea; color: white; padding: 5px 15px; border-radius: 30px; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">${investmentStatus}</span>
+              <span style="color: #6b7280; font-size: 13px;">ID: ${investmentId}</span>
+            </div>
+            
+            <div style="text-align: center; margin-bottom: 25px;">
+              <div style="color: #6b7280; font-size: 14px; margin-bottom: 5px;">Investment Amount</div>
+              <div style="color: #667eea; font-size: 48px; font-weight: 800; line-height: 1.2;">$${amountInDollars}</div>
+              <div style="color: #9ca3af; font-size: 14px; margin-top: 5px;">USD</div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+              <div style="background: #f9f7ff; border-radius: 16px; padding: 15px; text-align: center;">
+                <div style="color: #6b7280; font-size: 12px; margin-bottom: 5px;">ROI Rate</div>
+                <div style="color: #667eea; font-size: 24px; font-weight: 700;">${roi}%</div>
+                <div style="color: #9ca3af; font-size: 11px;">Daily</div>
+              </div>
+              <div style="background: #f9f7ff; border-radius: 16px; padding: 15px; text-align: center;">
+                <div style="color: #6b7280; font-size: 12px; margin-bottom: 5px;">Total Returns</div>
+                <div style="color: #10b981; font-size: 24px; font-weight: 700;">+$${returnsInDollars}</div>
+                <div style="color: #9ca3af; font-size: 11px;">Earned so far</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Investment Details -->
+          <div style="margin-bottom: 30px;">
+            <h3 style="color: #1f2937; font-size: 18px; margin: 0 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #f3f4f6; display: flex; align-items: center; gap: 8px;">
+              <span style="background: #667eea; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+              Investment Details
+            </h3>
+            
+            <table style="width: 100%; border-collapse: collapse;">
+              ${detailsRows}
+            </table>
+          </div>
+          
+          <!-- Daily Returns Info -->
+          <div style="background: #f5f0ff; border-radius: 16px; padding: 20px; margin-bottom: 30px; border: 1px solid #e0d7ff;">
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <div style="background: #667eea; width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+                <span style="color: white; font-size: 22px;">📊</span>
+              </div>
+              <div>
+                <h4 style="margin: 0 0 5px; color: #1f2937; font-size: 16px;">Daily Returns Accrual</h4>
+                <p style="margin: 0; color: #6b7280; font-size: 13px;">
+                  Your investment earns ${roi}% daily. Returns are calculated and added automatically.
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Button -->
+          <div style="text-align: center;">
+            <a href="https://althworldglobal.com/investments" 
+               style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 16px 40px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 15px 25px -8px rgba(102, 126, 234, 0.4);">
+              Track My Investment →
+            </a>
+          </div>
+          
+          <p style="text-align: center; margin: 20px 0 0; color: #9ca3af; font-size: 12px;">
+            Created: ${formatDateTime(createdDate)}
+          </p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f9fafb; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+          <p style="color: #9ca3af; font-size: 12px; margin: 0;">
+            © ${new Date().getFullYear()} ${appName}. All rights reserved.
+          </p>
+          <p style="color: #9ca3af; font-size: 11px; margin: 8px 0 0;">
+            Need help? <a href="mailto:support@${appName.toLowerCase()}.com" style="color: #667eea; text-decoration: none; font-weight: 500;">support@${appName.toLowerCase()}.com</a>
+          </p>
+          <p style="color: #9ca3af; font-size: 10px; margin: 10px 0 0;">
+            <a href="#" style="color: #9ca3af; text-decoration: underline;">Unsubscribe</a>
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+  }
+
 }
 
 // Export singleton instance

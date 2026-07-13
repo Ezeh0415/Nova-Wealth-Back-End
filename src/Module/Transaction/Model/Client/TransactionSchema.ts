@@ -16,8 +16,8 @@ export enum PaymentStatus {
 }
 
 export interface ITransaction extends Document {
-    userId: object ;
-    transactionId: object ;
+    userId: object;
+    transactionId: object;
     type: PaymentType;
     currency: string;
     requestedAmount: number;
@@ -26,6 +26,7 @@ export interface ITransaction extends Document {
     createdAt: Date;
     userEmail: string;
     userFullName: string;
+    description: string;
 }
 
 const TransactionSchema = new Schema<ITransaction>(
@@ -56,7 +57,8 @@ const TransactionSchema = new Schema<ITransaction>(
         userEmail: {
             type: String,
         },
-        userFullName: { type: String }
+        userFullName: { type: String },
+        description: { type: String }
     }
 )
 
