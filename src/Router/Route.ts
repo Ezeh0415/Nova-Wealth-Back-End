@@ -12,6 +12,8 @@ import { AdminGetDashBoardContr } from "../Module/DashBoard/Admin/Contr/AdminGet
 import { UpdateNotificationContr } from "../Module/Notification/Contr/UpdateNotificationContr";
 import { CryptoWalletContr } from "../Module/CryptoWallet/contr/CryptoWalletContr";
 import { userUpdateContr } from "../Module/UserUpdate/Contr/userUpdateContr";
+import { kycContr } from "../Module/Kyc/Client/Contr/KycContr";
+import { AdminKycContr } from "../Module/Kyc/Admin/Contr/KycAdminContr";
 
 const router = Router();
 const apiKey = ApiKey.getInstance();
@@ -26,12 +28,17 @@ const adminGetDashBoardContr = AdminGetDashBoardContr.getInstance();
 const updateNotificationContr = UpdateNotificationContr.getInstance();
 const cryptoWalletContr = CryptoWalletContr.getInstance();
 const UserUpdateContr = userUpdateContr.getInstance();
+const KycContr = kycContr.getInstance();
+const adminKycContr = AdminKycContr.getInstance();
 
 // client auth section
 router.post("/signup", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.SignUp(req, res));
 router.post("/login", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.Login(req, res));
 router.post("/forgetPassword", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.forgotPassword(req, res));
 router.post("/resetPassword", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.resetPassword(req, res));
+
+// KYC SECTION 
+router.post("/VerifyKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => KycContr.VerifyKyc(req, res));
 
 // client dashboard
 router.get("/dashboard", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => getDashboardContr.getDashBoard(req, res))
@@ -60,6 +67,10 @@ router.delete("/deletePlan/:id", apiKey.RequireApiKey.bind(apiKey), Authenticate
 // Admin Auth Section
 router.post("/AdminSignup", apiKey.RequireApiKey.bind(apiKey), (req, res) => adminAuthContr.AdminSignUp(req, res));
 router.post("/AdminLogin", apiKey.RequireApiKey.bind(apiKey), (req, res) => adminAuthContr.AdminLogin(req, res));
+
+// ADMIN KYC SECTION
+router.post("/confirmKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminKycContr.ConfirmKyc(req, res));
+router.post("/cancleKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminKycContr.CancelKyc(req, res));
 
 // AdminDashBoard Section
 router.post("/dashboardAdminUsers", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardUsers(req, res));

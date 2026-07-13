@@ -28,6 +28,7 @@ export enum NotificationPriority {
 // ==================== INTERFACES ====================
 export interface INotification extends Document {
     user: string | mongoose.Types.ObjectId;
+    transactionId: string | mongoose.Types.ObjectId;
     type: NotificationType;
     title: string;
     message: string;
@@ -37,6 +38,7 @@ export interface INotification extends Document {
     category: NotificationType;
     actionUrl?: string | null;
     icon: string;
+    path: string;
     expiresAt: Date;
     createdAt: Date;
     readAt?: Date | null;
@@ -50,6 +52,10 @@ const NotificationSchema = new Schema<INotification>(
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
+            index: true,
+        },
+        transactionId: {
+            type: Schema.Types.ObjectId,
             index: true,
         },
         type: {
@@ -93,6 +99,10 @@ const NotificationSchema = new Schema<INotification>(
         icon: {
             type: String,
             default: "bell",
+        },
+        path: {
+            type: String,
+            default: "",
         },
         expiresAt: {
             type: Date,

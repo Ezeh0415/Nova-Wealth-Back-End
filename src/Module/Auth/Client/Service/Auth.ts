@@ -6,7 +6,6 @@ import User, { IUser } from "../../Model/UserSchema";
 import bcrypt from 'bcryptJs';
 import { nanoid } from "nanoid";
 import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
-import mongoose from "mongoose";
 import { TokenService } from "../../../../Middleware/jwtConfig/GetJwtToken";
 import { ResetTokenModel } from "../../Model/ResetToken";
 
