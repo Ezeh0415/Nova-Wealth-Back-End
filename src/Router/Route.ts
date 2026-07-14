@@ -1,4 +1,5 @@
 import express from "express";
+import { schedule } from 'node-cron';
 import { Router } from "express";
 import { AuthContr } from "../Module/Auth/Client/Contr/Auth";
 import { AdminAuthContr } from "../Module/Auth/Admin/Contr/Auth";
@@ -15,6 +16,7 @@ import { userUpdateContr } from "../Module/UserUpdate/Contr/userUpdateContr";
 import { kycContr } from "../Module/Kyc/Client/Contr/KycContr";
 import { AdminKycContr } from "../Module/Kyc/Admin/Contr/KycAdminContr";
 import { ClientInvestmentContr } from "../Module/Investment/Client/Contr/Clientnvestment";
+import { AdminInvestContr } from "../Module/Investment/Admin/Contr/AdminInvestContr";
 
 const router = Router();
 const apiKey = ApiKey.getInstance();
@@ -32,6 +34,21 @@ const UserUpdateContr = userUpdateContr.getInstance();
 const KycContr = kycContr.getInstance();
 const adminKycContr = AdminKycContr.getInstance();
 const clientInvestmentContr = ClientInvestmentContr.getInstance();
+const adminInvestContr = AdminInvestContr.getInstance();
+
+const CRON_SCHEDULE = "*/2 * * * *"; // Every 2 minutes
+
+interface CronOptions {
+    scheduled: boolean;
+    timezone: string;
+    recoverMissedExecutions: boolean;
+}
+
+const cronOptions: CronOptions = {
+    scheduled: true,
+    timezone: "Africa/Lagos",
+    recoverMissedExecutions: false,
+};
 
 // client auth section
 router.post("/signup", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.SignUp(req, res));
@@ -96,6 +113,23 @@ router.post("/deleteWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.aut
 router.post("/getAdminUser", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => UserUpdateContr.AdminGetUser(req, res))
 router.post("/updateFile", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => UserUpdateContr.AdminUpdateUser(req, res));
 
+// INVESTMENT SECTION 
+router.post("/confirmInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.confirmInvestment(req, res));
+router.post("/cancelInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.cancelInvestment(req, res));
+
+// INVESTMENT PROCESSING SECTION
+schedule(
+    CRON_SCHEDULE,
+    (): void => {
+        try {
+            console.log(`Processing ROI at: ${new Date().toISOString()}`);
+            adminInvestContr.processDailyROI(undefined as any, undefined as any);
+        } catch (error) {
+            console.error('Error processing ROI:', error);
+        }
+    },
+    cronOptions
+);
 
 export default router;
 

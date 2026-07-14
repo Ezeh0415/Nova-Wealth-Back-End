@@ -458,84 +458,101 @@ export class AdminInvestmentService {
         };
     }
 
-    private async cancelInvestment(investmentId: string) {
-        const investment = await this.InvestmentModel.findById(investmentId);
-        if (!investment) {
-            throw new Error("Investment not found");
-        }
+    public async cancelInvestment(investmentId: string) {
+        try {
+            const investment = await this.InvestmentModel.findById(investmentId);
+            if (!investment) {
+                throw new Error("Investment not found");
+            }
 
-        if (investment.investmentStatus !== "pending") {
-            throw new Error(
-                `Cannot cancel ${investment.investmentStatus} investment`,
+            if (investment.investmentStatus !== "pending") {
+                throw new Error(
+                    `Cannot cancel ${investment.investmentStatus} investment`,
+                );
+            }
+
+            // Refund to wallet
+            const wallet = await this.WalletModel.findOne({
+                userId: investment.userId,
+            });
+            if (wallet) {
+                wallet.balance += investment.amount;
+                wallet.pendingInvestment -= investment.amount;
+                await wallet.save();
+            }
+
+            // Update investment
+            investment.investmentStatus = InvestmentStatus.CANCELLED;
+            investment.cancelledAt = new Date();
+            await investment.save();
+
+            // Update transactions
+            await this.TransactionModel.updateOne(
+                {
+                    transactionId: investment._id,
+                },
+                { status: PaymentStatus.CANCELLED },
             );
+
+            await this.AdminTransactionModel.updateOne(
+                {
+                    transactionId: investment._id,
+                },
+                { status: AdminTransactionStatus.CANCELLED },
+            );
+
+            // Send notification
+            await this.NotificationModel.create({
+                user: investment.userId,
+                type: NotificationType.INVESTMENT,
+                title: "Investment Cancelled",
+                message: `Your ${investment.investmentType} investment of $${(investment.amount / 100).toFixed(2)} has been cancelled and refunded.`,
+                data: { investmentId: investment._id },
+                category: NotificationType.INVESTMENT,
+                icon: NotificationType.INVESTMENT,
+            });
+
+            const user = await this.userModels.findById(investment.userId);
+
+            if (!user) {
+                throw new Error("No user Match")
+            }
+
+            const plan = await this.InvestmentPlanModel.findOne({
+                planId: investment.investmentType,
+            });
+
+            if (!plan) {
+                throw new Error(
+                    `Investment plan "${investment.investmentType}" not found`,
+                );
+            }
+
+            const userData: IInvestEmail = {
+                _id: investment._id,
+                userId: investment.userId,
+                amount: investment.amount,
+                roi: investment.roi,
+                TotalReturns: investment.TotalReturns, // $1,250.00
+                lastRoiAt: investment.lastRoiAt,
+                investmentType: investment.investmentType,
+                investmentStatus: investment.investmentStatus,
+                investmentStartDate: investment.investmentStartDate,
+                createdAt: investment.createdAt,
+                formatType: "Cancelled",
+                appName: "ALTHWORLD-GLOBAL"
+            }
+
+            const subject = `${user.fullName} Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} was cancelled.`;
+
+            await this.mailjet.Investment(user.email, subject, userData);
+
+            return investment;
+        } catch (error) {
+            if (error instanceof Error) {
+                throw new Error(`Failed to confirm investment : ${error.message}`);
+            }
+            throw new Error('Failed to confirm investment : Unknown error');
         }
-
-        // Refund to wallet
-        const wallet = await this.WalletModel.findOne({
-            userId: investment.userId,
-        });
-        if (wallet) {
-            wallet.balance += investment.amount;
-            wallet.pendingInvestment -= investment.amount;
-            await wallet.save();
-        }
-
-        // Update investment
-        investment.investmentStatus = InvestmentStatus.CANCELLED;
-        investment.cancelledAt = new Date();
-        await investment.save();
-
-        // Update transactions
-        await this.TransactionModel.updateOne(
-            {
-                transactionId: investment._id,
-            },
-            { status: PaymentStatus.CANCELLED },
-        );
-
-        await this.AdminTransactionModel.updateOne(
-            {
-                transactionId: investment._id,
-            },
-            { status: AdminTransactionStatus.CANCELLED },
-        );
-
-        // Send notification
-        await this.NotificationModel.create({
-            user: investment.userId,
-            type: NotificationType.INVESTMENT,
-            title: "Investment Cancelled",
-            message: `Your ${investment.investmentType} investment of $${(investment.amount / 100).toFixed(2)} has been cancelled and refunded.`,
-            data: { investmentId: investment._id },
-            category: NotificationType.INVESTMENT,
-            icon: NotificationType.INVESTMENT,
-        });
-
-        const user = await this.userModels.findById(investment.userId);
-
-        if(!user) {
-            throw new Error("No user Match")
-        }
-
-        const userData: IInvestEmail = {
-            _id: investment._id,
-            userId: investment.userId,
-            amount: investment.amount,
-            roi: investment.roi,
-            TotalReturns: investment.TotalReturns, // $1,250.00
-            lastRoiAt: investment.lastRoiAt,
-            investmentType: investment.investmentType,
-            investmentStatus: investment.investmentStatus,
-            investmentStartDate: investment.investmentStartDate,
-            createdAt: investment.createdAt,
-            formatType: "Cancelled",
-            appName: "ALTHWORLD-GLOBAL"
-        }
-
-        const subject = `${user.fullName} Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} was cancelled.`;
-
-        await this.mailjet.Investment(user.email, subject, userData);
-
-        return investment;
     }
 }
