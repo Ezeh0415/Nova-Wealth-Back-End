@@ -2,11 +2,11 @@
   "name": "althworldbackend",
   "version": "1.0.0",
   "description": "working on a crypto base investment project",
-  "main": "src/App.ts",
+  "main": "dist/App.js",
   "scripts": {
     "test": "jest --runInBand",
-    "start": "node src/App.ts",
-    "dev": "nodemon src/App.ts",
+    "start": "node dist/App.js",
+    "dev": "nodemon dist/App.js",
     "build": "tsc --watch"
   },
   "repository": {
