@@ -7,14 +7,15 @@ class GetDashboardContr {
         this.serviceDashBoard = ClientDashBoard_1.ClientDashboard.getInstance();
     }
     static getInstance() {
-        if (GetDashboardContr.instance) {
+        if (!GetDashboardContr.instance) {
             GetDashboardContr.instance = new GetDashboardContr();
         }
         return GetDashboardContr.instance;
     }
     async getDashBoard(req, res) {
         try {
-            const userId = req.user.userId;
+            // const userId = req.user.userId;
+            const userId = req.body;
             const dashboard = await this.serviceDashBoard.getDashboard(userId);
             res.status(200).json(dashboard);
             return;

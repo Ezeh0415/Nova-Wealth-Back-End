@@ -60,6 +60,7 @@ class AuthContr {
                 message: "Login successful",
                 data: result.safeUser,
                 accessToken: result.accessToken,
+                refreshToken: result.accessToken,
             });
         }
         catch (error) {

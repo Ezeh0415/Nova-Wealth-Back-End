@@ -25,6 +25,7 @@ class MiddlewareConfig {
             "http://localhost:5174", // Local development (Vite default)
             "http://localhost:5175", // Alternate local port
             "http://localhost:3000", // Local server port
+            "http://localhost:8080", // Local server port
             "https://api.coingecko.com/api/v3/coins/markets?" +
                 "vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false", // coin gkeco
             "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app", // Vercel deployment
@@ -46,7 +47,7 @@ class MiddlewareConfig {
             },
             credentials: true, // Allow cookies and authentication headers
             methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Allowed HTTP methods
-            allowedHeaders: ["Content-Type", "Authorization", "x-api-key"], // Allowed headers
+            allowedHeaders: ["Content-Type", "Authorization", 'x-refresh-token', "x-api-key"], // Allowed headers
             exposedHeaders: ["Content-Range", "X-Content-Range"], // Headers exposed to client
             maxAge: 86400, // Cache preflight requests for 24 hours
         }));

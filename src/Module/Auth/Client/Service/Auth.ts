@@ -200,11 +200,18 @@ export class Authentication {
                 { new: true }
             )
 
-            const { password: _, ...safeUser } = isExist.toObject();
+            const user = await this.user.findById(isExist._id);
+
+            if (!user) {
+                throw new Error("Login failed");
+            }
+
+            const { password: _, ...safeUser } = user.toObject();
 
             return {
                 safeUser,
                 accessToken,
+                refreshToken,
             }
 
         } catch (error) {

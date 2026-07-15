@@ -35,12 +35,6 @@ const KycContr = KycContr_1.kycContr.getInstance();
 const adminKycContr = KycAdminContr_1.AdminKycContr.getInstance();
 const clientInvestmentContr = Clientnvestment_1.ClientInvestmentContr.getInstance();
 const adminInvestContr = AdminInvestContr_1.AdminInvestContr.getInstance();
-const CRON_SCHEDULE = "*/2 * * * *"; // Every 2 minutes
-const cronOptions = {
-    scheduled: true,
-    timezone: "Africa/Lagos",
-    recoverMissedExecutions: false,
-};
 // client auth section
 router.post("/signup", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.SignUp(req, res));
 router.post("/login", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.Login(req, res));
@@ -92,6 +86,12 @@ router.post("/updateFile", apiKey.RequireApiKey.bind(apiKey), Authenticate.authe
 // INVESTMENT SECTION 
 router.post("/confirmInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.confirmInvestment(req, res));
 router.post("/cancelInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.cancelInvestment(req, res));
+const CRON_SCHEDULE = "*/2 * * * *"; // Every 2 minutes
+const cronOptions = {
+    scheduled: true,
+    timezone: "Africa/Lagos",
+    recoverMissedExecutions: false,
+};
 // INVESTMENT PROCESSING SECTION
 (0, node_cron_1.schedule)(CRON_SCHEDULE, () => {
     try {

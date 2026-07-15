@@ -230,9 +230,9 @@ export class ClientInvestment {
 
         } catch (error) {
             if (error instanceof Error) {
-                throw new Error(`Failed to delete investment plan: ${error.message}`);
+                throw new Error(`Failed to initiate investment plan: ${error.message}`);
             }
-            throw new Error('Failed to delete investment plan: Unknown error');
+            throw new Error('Failed to initiate investment plan: Unknown error');
         }
     }
 
