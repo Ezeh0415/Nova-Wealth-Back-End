@@ -71,7 +71,7 @@ router.post("/cancleKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authen
 router.post("/dashboardAdminUsers", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardUsers(req, res));
 router.post("/dashboardAdminWallets", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardWallets(req, res));
 // Admin Transaction Section
-router.post("/Transactions", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.adminGetTransaction(req, res));
+router.get("/Transactions", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.adminGetTransaction(req, res));
 router.post("/confirmDeposit", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.confirmDeposit(req, res));
 router.post("/cancleDeposit", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.cancelDeposit(req, res));
 router.post("/confirmWithdraw", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => AdminTransaction.confirmWithdrawal(req, res));
@@ -84,8 +84,8 @@ router.post("/deleteWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.aut
 router.post("/getAdminUser", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => UserUpdateContr.AdminGetUser(req, res));
 router.post("/updateFile", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => UserUpdateContr.AdminUpdateUser(req, res));
 // INVESTMENT SECTION 
-router.post("/confirmInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.confirmInvestment(req, res));
-router.post("/cancelInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.cancelInvestment(req, res));
+router.put("/confirmInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.confirmInvestment(req, res));
+router.put("/cancelInvest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminInvestContr.cancelInvestment(req, res));
 const CRON_SCHEDULE = "*/2 * * * *"; // Every 2 minutes
 const cronOptions = {
     scheduled: true,

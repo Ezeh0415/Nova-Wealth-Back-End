@@ -6,6 +6,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GetTransaction = void 0;
 const zod_1 = __importDefault(require("zod"));
 exports.GetTransaction = zod_1.default.object({
-    page: zod_1.default.number(),
-    limit: zod_1.default.number()
+    page: zod_1.default.coerce.number(),
+    limit: zod_1.default.coerce.number()
 });

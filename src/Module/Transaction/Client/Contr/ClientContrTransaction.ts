@@ -14,7 +14,7 @@ export class clientContrTransaction {
     }
 
     public static getInstance(): clientContrTransaction {
-        if (clientContrTransaction.instance) {
+        if (!clientContrTransaction.instance) {
             clientContrTransaction.instance = new clientContrTransaction()
         }
 

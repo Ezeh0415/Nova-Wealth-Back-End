@@ -1,6 +1,6 @@
 import z from "zod";
 
 export const userDeposit = z.object({
-    amount: z.number(),
+    amount: z.coerce.number(),
     paymentType: z.string()
 })

@@ -10,7 +10,7 @@ class clientContrTransaction {
         this.TransactionService = ClientTransaction_1.ClientTransaction.getInstance();
     }
     static getInstance() {
-        if (clientContrTransaction.instance) {
+        if (!clientContrTransaction.instance) {
             clientContrTransaction.instance = new clientContrTransaction();
         }
         return clientContrTransaction.instance;

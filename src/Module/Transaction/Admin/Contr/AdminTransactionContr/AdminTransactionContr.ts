@@ -23,7 +23,7 @@ export class AdminTransactionContr {
 
     public async adminGetTransaction(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const validateData = GetTransaction.parse(req.body);
+            const validateData = GetTransaction.parse(req.query);
             const { page, limit } = validateData;
             const data = await this.AdminTransction.AdminGetTransaction(page, limit);
             res.status(200).json(data);

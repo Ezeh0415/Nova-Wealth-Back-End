@@ -1,7 +1,7 @@
 import z from "zod";
 
 export const userWithdrawal = z.object({
-    amount: z.number(),
+    amount: z.coerce.number(),
     paymentType: z.string(),
     walletAddress: z.string(),
 });

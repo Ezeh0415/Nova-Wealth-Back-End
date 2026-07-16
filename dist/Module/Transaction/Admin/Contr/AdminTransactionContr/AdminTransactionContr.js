@@ -17,7 +17,7 @@ class AdminTransactionContr {
     }
     async adminGetTransaction(req, res) {
         try {
-            const validateData = AdminTransaction_1.GetTransaction.parse(req.body);
+            const validateData = AdminTransaction_1.GetTransaction.parse(req.query);
             const { page, limit } = validateData;
             const data = await this.AdminTransction.AdminGetTransaction(page, limit);
             res.status(200).json(data);
