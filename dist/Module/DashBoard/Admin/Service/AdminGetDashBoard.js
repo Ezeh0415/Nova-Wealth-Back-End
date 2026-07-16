@@ -18,7 +18,7 @@ class AdminGetDashBoard {
         this.InvestPlan = InvestmentPlanSchema_1.default;
     }
     static getInstance() {
-        if (AdminGetDashBoard.instance) {
+        if (!AdminGetDashBoard.instance) {
             AdminGetDashBoard.instance = new AdminGetDashBoard();
         }
         return AdminGetDashBoard.instance;
@@ -26,7 +26,7 @@ class AdminGetDashBoard {
     async getAdminDashboardUsers(userId) {
         let isAdmin;
         isAdmin = await this.user.findById(userId).select("role");
-        if (isAdmin || isAdmin.role !== "admin") {
+        if (!isAdmin || isAdmin.role !== "admin") {
             throw new Error("Unauthorized access");
         }
         const users = await this.user.find().select("fullName userName email role createdAt");

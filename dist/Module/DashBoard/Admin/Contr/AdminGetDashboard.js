@@ -16,6 +16,12 @@ class AdminGetDashBoardContr {
     async getAdminDashBoardUsers(req, res) {
         try {
             const userId = req.user.userId;
+            // const userId = req.body.userId;
+            // console.log(userId);
+            if (!userId) {
+                res.status(404).json("userId not passed");
+                return;
+            }
             const result = await this.AdminGetDashBoard.getAdminDashboardUsers(userId);
             res.status(200).json({ data: result });
             return;

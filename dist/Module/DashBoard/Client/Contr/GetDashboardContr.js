@@ -14,8 +14,8 @@ class GetDashboardContr {
     }
     async getDashBoard(req, res) {
         try {
-            // const userId = req.user.userId;
-            const userId = req.body;
+            const userId = req.user.userId;
+            // const userId = req.body;
             const dashboard = await this.serviceDashBoard.getDashboard(userId);
             res.status(200).json(dashboard);
             return;

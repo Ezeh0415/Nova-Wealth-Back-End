@@ -15,7 +15,7 @@ export class AdminGetDashBoard {
     private constructor() { }
 
     public static getInstance(): AdminGetDashBoard {
-        if (AdminGetDashBoard.instance) {
+        if (!AdminGetDashBoard.instance) {
             AdminGetDashBoard.instance = new AdminGetDashBoard()
         }
 
@@ -27,7 +27,8 @@ export class AdminGetDashBoard {
         let isAdmin: any;
 
         isAdmin = await this.user.findById(userId).select("role");
-        if (isAdmin || isAdmin.role !== "admin") {
+        
+        if (!isAdmin || isAdmin.role !== "admin") {
             throw new Error("Unauthorized access");
         }
 

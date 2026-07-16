@@ -82,6 +82,7 @@ router.post("/confirmKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authe
 router.post("/cancleKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminKycContr.CancelKyc(req, res));
 
 // AdminDashBoard Section
+
 router.post("/dashboardAdminUsers", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardUsers(req, res));
 router.post("/dashboardAdminWallets", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardWallets(req, res));
 
