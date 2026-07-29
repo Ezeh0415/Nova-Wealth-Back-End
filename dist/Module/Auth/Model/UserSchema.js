@@ -49,6 +49,7 @@ const UserSchema = new mongoose_1.Schema({
         unique: true,
         sparse: true,
         trim: true,
+        lowercase: true,
     },
     email: {
         type: String,
@@ -56,14 +57,17 @@ const UserSchema = new mongoose_1.Schema({
         unique: true,
         sparse: true,
         trim: true,
+        lowercase: true,
     },
     password: {
         type: String,
         required: true,
+        minlength: 8,
+        select: false,
     },
     refreshToken: {
         type: String,
-        select: false, // Don't return in queries by default
+        select: false,
     },
     tokenVersion: {
         type: Number,
@@ -71,6 +75,7 @@ const UserSchema = new mongoose_1.Schema({
     },
     lastTokenRefresh: {
         type: Date,
+        default: null,
     },
     isActive: {
         type: Boolean,
@@ -88,12 +93,14 @@ const UserSchema = new mongoose_1.Schema({
     referredBy: {
         type: String,
         default: null,
+        index: true,
     },
     referralCode: {
         type: String,
         unique: true,
         sparse: true,
         trim: true,
+        uppercase: true,
     },
     referralLink: {
         type: String,
@@ -108,9 +115,11 @@ const UserSchema = new mongoose_1.Schema({
     firstDepositAmount: {
         type: Number,
         default: 0,
+        min: 0,
     },
     firstDepositDate: {
         type: Date,
+        default: null,
     },
     KycStatus: {
         type: String,
@@ -126,8 +135,30 @@ const UserSchema = new mongoose_1.Schema({
         required: false,
     },
     softDelete: {
-        type: String,
+        type: Boolean,
         default: false,
+    },
+    wallets: {
+        bitcoin: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+        usdt: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+        ethereum: {
+            type: String,
+            default: "",
+            trim: true,
+        },
+        tron: {
+            type: String,
+            default: "",
+            trim: true,
+        },
     },
 }, {
     timestamps: true,
@@ -157,8 +188,32 @@ UserSchema.index({ fullName: "text", userName: "text", email: "text" }, {
     },
     name: "UserTextSearch",
 });
-// TTL index for soft delete (optional - auto-delete after 30 days if soft deleted)
-UserSchema.index({ softDelete: 1, updatedAt: 1 }, { expireAfterSeconds: 2592000 });
+// ==============================
+// INSTANCE METHODS
+// ==============================
+// Compare password (you'll need to implement bcrypt)
+UserSchema.methods.comparePassword = async function (candidatePassword) {
+    // Implement with bcrypt
+    // const bcrypt = require('bcryptjs');
+    // return await bcrypt.compare(candidatePassword, this.password);
+    return candidatePassword === this.password; // Placeholder - replace with bcrypt
+};
+// Check if password needs to be changed
+UserSchema.methods.needsPasswordChange = function () {
+    if (!this.passwordChangedAt)
+        return false;
+    const daysSinceChange = (Date.now() - this.passwordChangedAt.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceChange > 90; // 90 days
+};
+// Generate referral code
+UserSchema.methods.generateReferralCode = function () {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let code = "";
+    for (let i = 0; i < 8; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+};
 UserSchema.statics.findByEmail = async function (email) {
     return this.findOne({ email: email.toLowerCase().trim() });
 };
@@ -166,10 +221,47 @@ UserSchema.statics.findByUserName = async function (username) {
     return this.findOne({ userName: username.toLowerCase().trim() });
 };
 UserSchema.statics.findByReferralCode = async function (code) {
-    return this.findOne({ referralCode: code });
+    return this.findOne({ referralCode: code.toUpperCase().trim() });
 };
+UserSchema.statics.findActiveUsers = async function () {
+    return this.find({ isActive: true, softDelete: false });
+};
+UserSchema.statics.findInactiveUsers = async function () {
+    return this.find({ isActive: false, softDelete: false });
+};
+UserSchema.statics.getReferralStats = async function (userId) {
+    const referrals = await this.find({ referredBy: userId });
+    const activeReferrals = referrals.filter((user) => user.isActive && !user.softDelete);
+    // Calculate total commission (you'll need to implement this logic)
+    const totalCommission = referrals.reduce((sum, user) => {
+        // This is a placeholder - implement your commission logic
+        return sum + (user.firstDepositAmount || 0) * 0.1;
+    }, 0);
+    return {
+        totalReferrals: referrals.length,
+        activeReferrals: activeReferrals.length,
+        totalCommission,
+    };
+};
+// ==============================
+// VIRTUAL PROPERTIES
+// ==============================
+UserSchema.virtual("isVerified").get(function () {
+    return this.KycStatus === "verified";
+});
+UserSchema.virtual("isPendingKyc").get(function () {
+    return this.KycStatus === "pending";
+});
+UserSchema.virtual("fullNameDisplay").get(function () {
+    return this.fullName || this.userName || "User";
+});
+// Ensure virtuals are included in JSON output
+UserSchema.set("toJSON", { virtuals: true });
+UserSchema.set("toObject", { virtuals: true });
 // ==============================
 // MODEL
 // ==============================
-const User = mongoose_1.default.model("User", UserSchema);
+// Check if model exists before creating new one
+const User = mongoose_1.default.models.User ||
+    mongoose_1.default.model("User", UserSchema);
 exports.default = User;

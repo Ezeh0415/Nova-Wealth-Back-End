@@ -43,6 +43,10 @@ router.post("/signup", apiKey.RequireApiKey.bind(apiKey), (req, res) => authCont
 router.post("/login", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.Login(req, res));
 router.post("/forgetPassword", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.forgotPassword(req, res));
 router.post("/resetPassword", apiKey.RequireApiKey.bind(apiKey), (req, res) => authContr.resetPassword(req, res));
+router.post("/profileUpdate", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => authContr.profileUpdate(req, res));
+
+//FRONT END TOKEN VERIFICATION
+router.get("/verify", apiKey.RequireApiKey.bind(apiKey), (req, res) => Authenticate.FrontEndVerify(req, res));
 
 // KYC SECTION 
 router.post("/VerifyKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => KycContr.VerifyKyc(req, res));
@@ -55,11 +59,12 @@ router.put("/markNotificationAsRead", apiKey.RequireApiKey.bind(apiKey), Authent
 router.put("/markAllNotificationAsRead", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => updateNotificationContr.updateUserAllNotif(req, res))
 
 // User Transaction section
-router.post("/payment", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => clientTransaction.userDeposit(req, res));
-router.post("/withdraw", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => clientTransaction.userWithdrawal(req, res));
+router.post("/Deposit", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => clientTransaction.userDeposit(req, res));
 
+router.post("/withdraw", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => clientTransaction.userWithdrawal(req, res));
+// 
 // invest plan
-router.post("investPlan", apiKey.RequireApiKey.bind(apiKey), (req, res) => getDashboardContr.getInvestPlan(req, res));
+router.get("/investPlan", apiKey.RequireApiKey.bind(apiKey), (req, res) => getDashboardContr.getInvestPlan(req, res));
 router.post("/createPlan", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.CreateInvestPlan(req, res));
 router.put("/updatePlan/:id", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.updateInvestPlan(req, res));
 router.delete("/deletePlan/:id", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.DeleteInvestPlan(req, res));
@@ -82,8 +87,8 @@ router.post("/confirmKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authe
 router.post("/cancleKyc", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminKycContr.CancelKyc(req, res));
 
 // AdminDashBoard Section
-
-router.post("/dashboardAdminUsers", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardUsers(req, res));
+// 
+router.get("/dashboardAdminUsers", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardUsers(req, res));
 router.post("/dashboardAdminWallets", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => adminGetDashBoardContr.getAdminDashBoardWallets(req, res));
 
 // Admin Transaction Section
@@ -95,8 +100,8 @@ router.post("/confirmWithdraw", apiKey.RequireApiKey.bind(apiKey), Authenticate.
 // ADMIN CRYPTO WALLET SECTION
 router.get("/getWallets", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.getCryptoWallet(req, res));
 router.post("/addWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.createCryptoWallet(req, res));
-router.post("/updateWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.updateCryptoWallet(req, res));
-router.post("/deleteWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.deleteCryptoWallet(req, res));
+router.put("/updateWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.updateCryptoWallet(req, res));
+router.delete("/deleteWallet", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => cryptoWalletContr.deleteCryptoWallet(req, res));
 
 // USER UPDATE
 router.post("/getAdminUser", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => UserUpdateContr.AdminGetUser(req, res))

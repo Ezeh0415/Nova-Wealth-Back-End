@@ -101,7 +101,7 @@ class AdminInvestmentService {
     async confirmInvestment(investmentId) {
         try {
             // 1. FIND INVESTMENT
-            const investment = await this.InvestmentModel.findById(investmentId);
+            const investment = await this.InvestmentModel.findOne({ uniqueId: investmentId });
             if (!investment) {
                 throw new Error("Investment not found");
             }
@@ -134,7 +134,7 @@ class AdminInvestmentService {
             wallet.pendingInvestment -= investment.amount;
             wallet.invBalance = (wallet.invBalance || 0) + investment.amount;
             await wallet.save();
-            console.log(`✅ Moved ${investment.amount / 100} from pending to investment balance`);
+            console.log(` Moved ${investment.amount / 100} from pending to investment balance`);
             // 6. SET ACTUAL DATES BASED ON PLAN DURATION
             const actualStartDate = new Date();
             const actualEndDate = new Date(actualStartDate);
@@ -177,7 +177,7 @@ class AdminInvestmentService {
                 investmentStartDate: investment.investmentStartDate,
                 createdAt: investment.createdAt,
                 formatType: "confirmed",
-                appName: "ALTHWORLD-GLOBAL"
+                appName: "Nova-Wealth-GLOBAL"
             };
             const subject = `${user.fullName} Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} is now active. It will mature on ${actualEndDate.toLocaleDateString()}.`;
             await this.mailjet.Investment(user.email, subject, userData);
@@ -390,7 +390,7 @@ class AdminInvestmentService {
             investmentStartDate: investment.investmentStartDate,
             createdAt: investment.createdAt,
             formatType: "completed",
-            appName: "ALTHWORLD-GLOBAL"
+            appName: "Nova-Wealth-GLOBAL"
         };
         const subject = `${user.fullName} Your ${investment.investmentType} investment has completed. $${(totalInvBalance / 100).toFixed(2)} (Capital: $${(capital / 100).toFixed(2)} + Returns: $${(returns / 100).toFixed(2)}) has been credited to your wallet.`;
         await this.mailjet.Investment(user.email, subject, userData);
@@ -406,7 +406,7 @@ class AdminInvestmentService {
     }
     async cancelInvestment(investmentId) {
         try {
-            const investment = await this.InvestmentModel.findById(investmentId);
+            const investment = await this.InvestmentModel.findOne({ uniqueId: investmentId });
             if (!investment) {
                 throw new Error("Investment not found");
             }
@@ -418,7 +418,6 @@ class AdminInvestmentService {
                 userId: investment.userId,
             });
             if (wallet) {
-                wallet.balance += investment.amount;
                 wallet.pendingInvestment -= investment.amount;
                 await wallet.save();
             }
@@ -465,7 +464,7 @@ class AdminInvestmentService {
                 investmentStartDate: investment.investmentStartDate,
                 createdAt: investment.createdAt,
                 formatType: "Cancelled",
-                appName: "ALTHWORLD-GLOBAL"
+                appName: "Nova-Wealth-GLOBAL"
             };
             const subject = `${user.fullName} Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} was cancelled.`;
             await this.mailjet.Investment(user.email, subject, userData);

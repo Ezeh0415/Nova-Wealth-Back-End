@@ -12,6 +12,7 @@ export interface IInvest {
     userId: string | mongoose.Types.ObjectId,
     amount: number,
     investmentType: string,
+    uniqueId?: string,
 }
 
 export class ClientInvestment {
@@ -83,7 +84,7 @@ export class ClientInvestment {
     public async invest(Data: IInvest) {
         try {
 
-            const { userId, amount, investmentType } = Data;
+            const { userId, amount, investmentType, uniqueId } = Data;
 
             const plan = await this.InvestPlan.findOne({
                 planId: investmentType,
@@ -125,7 +126,7 @@ export class ClientInvestment {
 
             const creditedAmountInKobo = amount * 100;
 
-            if (wallet.balance < creditedAmountInKobo) {
+            if (wallet.pending < creditedAmountInKobo) {
                 throw new Error(
                     `Insufficient balance. Available: $${wallet.balance / 100}, Required: $${amount}`,
                 );
@@ -133,7 +134,7 @@ export class ClientInvestment {
 
             const roi = plan.roi;
 
-            wallet.balance -= creditedAmountInKobo;
+            wallet.pending -= creditedAmountInKobo;
             wallet.pendingInvestment =
                 (wallet.pendingInvestment || 0) + creditedAmountInKobo;
             await wallet.save();
@@ -146,6 +147,7 @@ export class ClientInvestment {
                 investmentPlanName: plan.name, // Store plan name for reference
                 investmentStatus: InvestmentStatus.PENDING,
                 planId: plan.planId, // Reference to plan
+                uniqueId: uniqueId
             });
 
             await investment.save();
@@ -157,6 +159,7 @@ export class ClientInvestment {
                 description: `Investment request - ${plan.name} (${investmentType})`,
                 status: PaymentStatus.PENDING,
                 transactionId: investment._id,
+                uniqueId: uniqueId
             });
 
             await transaction.save();
@@ -172,6 +175,8 @@ export class ClientInvestment {
                 status: AdminTransactionStatus.PENDING,
                 investmentType: investmentType,
                 investmentPlanName: plan.name,
+                plan_id: investmentType,
+                uniqueId: uniqueId
             });
 
             await adminTransaction.save();
@@ -203,7 +208,7 @@ export class ClientInvestment {
                 investmentStartDate: investment.investmentStartDate,
                 createdAt: investment.createdAt,
                 formatType: "Request Created",
-                appName: "ALTHWORLD-GLOBAL"
+                appName: "Nova-Wealth-GLOBAL"
             }
 
             const subject = `${user.fullName} Your ${plan.name} investment request of $${amount} has been created and is pending approval.`;

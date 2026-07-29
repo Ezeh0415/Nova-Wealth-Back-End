@@ -8,6 +8,7 @@ const UserSchema_1 = __importDefault(require("../../../Auth/Model/UserSchema"));
 const InvestmentSchema_1 = __importDefault(require("../../../Investment/Model/InvestmentSchema"));
 const InvestmentPlanSchema_1 = __importDefault(require("../../../InvestmentPlan/Model/InvestmentPlanSchema"));
 const NotificationSchema_1 = require("../../../Notification/Model/NotificationSchema");
+const Model_1 = __importDefault(require("../../../Referral/Model/Model"));
 const TransactionSchema_1 = __importDefault(require("../../../Transaction/Model/Client/TransactionSchema"));
 const WalletSchema_1 = __importDefault(require("../../../Wallet/Model/WalletSchema"));
 class ClientDashboard {
@@ -18,6 +19,7 @@ class ClientDashboard {
         this.Transaction = TransactionSchema_1.default;
         this.Notification = NotificationSchema_1.NotificationModel;
         this.investPlan = InvestmentPlanSchema_1.default;
+        this.referral = Model_1.default;
     }
     ;
     static getInstance() {
@@ -44,6 +46,7 @@ class ClientDashboard {
         const Notification = await this.Notification.find({
             user: userId,
         }).sort({ createdAt: -1 });
+        const referral = await this.referral.find({ referrer: userId });
         return {
             wallet, // Wallet balance and details
             investments, // All investment records
@@ -52,6 +55,7 @@ class ClientDashboard {
             Notification,
             accountStatus: user, // User verification status
             user: safeUser,
+            referral,
         };
     }
     async getInvestPlan() {

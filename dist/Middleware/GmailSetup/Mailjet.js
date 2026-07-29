@@ -43,8 +43,8 @@ class MailSender {
                 Messages: [
                     {
                         From: {
-                            Email: this.config.EMAIL_USER || "noreply@althworld.com",
-                            Name: "ALTHWORLD-GLOBAL",
+                            Email: this.config.EMAIL_USER || "noreply@Nova-Wealth.com",
+                            Name: "Nova-Wealth-GLOBAL",
                         },
                         To: [
                             {
@@ -72,8 +72,8 @@ class MailSender {
                 Messages: [
                     {
                         From: {
-                            Email: this.config.EMAIL_USER || "noreply@althworld.com",
-                            Name: "ALTHWORLD-GLOBAL",
+                            Email: this.config.EMAIL_USER || "noreply@Nova-Wealth.com",
+                            Name: "Nova-Wealth-GLOBAL",
                         },
                         To: [
                             {
@@ -99,7 +99,7 @@ class MailSender {
     // Send welcome email
     async sendWelcomeEmail(to, fullName, link) {
         const html = this.welcomeTemplate(fullName, link);
-        return this.sendEmail(to, "WELCOME TO ALTHWORLD-GLOBAL!", html);
+        return this.sendEmail(to, "WELCOME TO Nova-Wealth-GLOBAL!", html);
     }
     // admin welcome email
     async sendAdminWelcomEmail(to, fullName, userName, email, ipAddress, userAgent) {
@@ -140,12 +140,12 @@ class MailSender {
         return `
             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: #10b981; color: white; padding: 40px 20px; text-align: center;">
-                    <h1 style="margin: 0;">Welcome to AlthWorld!</h1>
+                    <h1 style="margin: 0;">Welcome to Nova-Wealth!</h1>
                     <p style="opacity: 0.9; margin-top: 10px;">Your Wellness Journey Begins Here</p>
                 </div>
                 <div style="padding: 30px;">
                     <h2 style="color: #065f46;">Hello ${fullName},</h2>
-                    <p>We're excited to have you join the AlthWorld community!</p>
+                    <p>We're excited to have you join the Nova-Wealth community!</p>
                     <div style="text-align: center; margin: 30px 0;">
                         <a href="${link}" style="background: #10b981; color: white; padding: 15px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
                             Start Your Journey
@@ -157,7 +157,7 @@ class MailSender {
     }
     adminWelcomeTemplate(fullName, userName, email, ipAddress, userAgent) {
         const signupTime = new Date().toLocaleString();
-        const appName = "Althworld Global";
+        const appName = "Nova-Wealth Global";
         return `
     <!DOCTYPE html>
     <html>
@@ -294,7 +294,7 @@ class MailSender {
     </html>
   `;
     }
-    resertPasswordEmail(link, appName = "ALTHWORLD-GLOBAL") {
+    resertPasswordEmail(link, appName = "Nova-Wealth-GLOBAL") {
         return `
   <!DOCTYPE html>
   <html>
@@ -568,7 +568,7 @@ class MailSender {
         </div>
         
         <p style="margin-top: 25px; font-size: 14px; color: #64748b;">
-          Need help? <a href="mailto:support@althworld.com" style="color: #10b981; text-decoration: none;">Contact our support team</a>
+          Need help? <a href="mailto:support@Nova-Wealth.com" style="color: #10b981; text-decoration: none;">Contact our support team</a>
         </p>
       </div>
       
@@ -577,10 +577,10 @@ class MailSender {
         <p>This email was sent to you as part of your account security.</p>
         
         <div class="footer-links">
-          <a href="https://althworldf.onrender.com/privacy">Privacy Policy</a>
-          <a href="https://althworldf.onrender.com/terms">Terms of Service</a>
-          <a href="https://althworldf.onrender.com/security">Security</a>
-          <a href="https://althworldf.onrender.com/help">Help Center</a>
+          <a href="https://Nova-Wealthf.onrender.com/privacy">Privacy Policy</a>
+          <a href="https://Nova-Wealthf.onrender.com/terms">Terms of Service</a>
+          <a href="https://Nova-Wealthf.onrender.com/security">Security</a>
+          <a href="https://Nova-Wealthf.onrender.com/help">Help Center</a>
         </div>
       </div>
     </div>
@@ -588,7 +588,7 @@ class MailSender {
   </html>
   `;
     }
-    passwordResetSuccess(userName, userEmail, appName = "ALTHWORLD-GLOBAL") {
+    passwordResetSuccess(userName, userEmail, appName = "Nova-Wealth-GLOBAL") {
         return `
 <!DOCTYPE html>
 <html>
@@ -880,7 +880,7 @@ class MailSender {
   `;
     }
     // Transaction Email Templates
-    userDeposit(userId, type, currency, requestedAmount, status, createdAt, userEmail, userFullName, appName = "ALTHWORLD-GLOBAL") {
+    userDeposit(userId, type, currency, requestedAmount, status, createdAt, userEmail, userFullName, appName = "Nova-Wealth-GLOBAL") {
         const depositTime = new Date(createdAt).toLocaleString();
         const amountInDollars = (requestedAmount / 100).toFixed(2);
         const transactionId = userId.toString().slice(-8) + Date.now().toString().slice(-6);
@@ -954,7 +954,7 @@ class MailSender {
               
               <!-- Button -->
               <div style="text-align: center;">
-                <a href="https://althworldglobal.com/dashboard" 
+                <a href="https://Nova-Wealthglobal.com/dashboard" 
                    style="display: inline-block; background: #10b981; color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; font-weight: 500;">
                   Go to Dashboard
                 </a>
@@ -975,7 +975,7 @@ class MailSender {
         </html>
       `;
     }
-    AdminDepositConfirm(userId, type, currency, creditedAmount, status, creditedAt, userEmail, userFullName, transactionId, isFirstDeposit, appName = "ALTHWORLD-GLOBAL") {
+    AdminDepositConfirm(userId, type, currency, creditedAmount, status, creditedAt, userEmail, userFullName, transactionId, isFirstDeposit, appName = "Nova-Wealth-GLOBAL") {
         const depositTime = new Date(creditedAt).toLocaleString();
         const amountInDollars = (creditedAmount / 100).toFixed(2);
         const displayTransactionId = transactionId ||
@@ -1001,7 +1001,7 @@ class MailSender {
           
           <!-- Icon -->
           <div style="width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); border: 2px solid rgba(255,255,255,0.3);">
-            <span style="font-size: 32px; color: white;">✅</span>
+            <span style="font-size: 32px; color: white;"></span>
           </div>
           
           <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">${type} Confirmed!</h1>
@@ -1014,7 +1014,7 @@ class MailSender {
           <!-- Success Message Banner (matches your message format) -->
           <div style="background: #d1fae5; border-radius: 50px; padding: 12px 20px; margin-bottom: 30px; text-align: center; border-left: 4px solid #0f766e;">
             <p style="margin: 0; color: #0f766e; font-size: 16px; font-weight: 500;">
-              ✅ Your ${type} of <strong>$${amountInDollars}</strong> has been confirmed.${isFirstDeposit ? " 🎉 This was your first deposit!" : ""}
+               Your ${type} of <strong>$${amountInDollars}</strong> has been confirmed.${isFirstDeposit ? " 🎉 This was your first deposit!" : ""}
             </p>
           </div>
           
@@ -1080,7 +1080,7 @@ class MailSender {
           
           <!-- Button -->
           <div style="text-align: center;">
-            <a href="https://althworldglobal.com/dashboard" 
+            <a href="https://Nova-Wealthglobal.com/dashboard" 
                style="display: inline-block; background: linear-gradient(135deg, #0f766e, #14b8a6); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 10px 20px -5px rgba(20, 184, 166, 0.3);">
               View My Wallet →
             </a>
@@ -1107,7 +1107,7 @@ class MailSender {
     </html>
   `;
     }
-    AdminWithdrawalConfirm(userId, type, currency, creditedAmount, status, creditedAt, userEmail, userFullName, transactionId, appName = "ALTHWORLD-GLOBAL") {
+    AdminWithdrawalConfirm(userId, type, currency, creditedAmount, status, creditedAt, userEmail, userFullName, transactionId, appName = "Nova-Wealth-GLOBAL") {
         const depositTime = new Date(creditedAt).toLocaleString();
         const amountInDollars = (creditedAmount / 100).toFixed(2);
         const displayTransactionId = transactionId ||
@@ -1133,7 +1133,7 @@ class MailSender {
           
           <!-- Icon -->
           <div style="width: 70px; height: 70px; background: rgba(255,255,255,0.2); border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); border: 2px solid rgba(255,255,255,0.3);">
-            <span style="font-size: 32px; color: white;">✅</span>
+            <span style="font-size: 32px; color: white;"></span>
           </div>
           
           <h1 style="margin: 0; color: white; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">${type} Confirmed!</h1>
@@ -1146,7 +1146,7 @@ class MailSender {
           <!-- Success Message Banner (matches your message format) -->
           <div style="background: #d1fae5; border-radius: 50px; padding: 12px 20px; margin-bottom: 30px; text-align: center; border-left: 4px solid #0f766e;">
             <p style="margin: 0; color: #0f766e; font-size: 16px; font-weight: 500;">
-              ✅ Your ${type} of <strong>$${amountInDollars}</strong> has been confirmed.
+               Your ${type} of <strong>$${amountInDollars}</strong> has been confirmed.
             </p>
           </div>
           
@@ -1203,7 +1203,7 @@ class MailSender {
           
           <!-- Button -->
           <div style="text-align: center;">
-            <a href="https://althworldglobal.com/dashboard" 
+            <a href="https://Nova-Wealthglobal.com/dashboard" 
                style="display: inline-block; background: linear-gradient(135deg, #0f766e, #14b8a6); color: white; padding: 14px 35px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 10px 20px -5px rgba(20, 184, 166, 0.3);">
               View My Wallet →
             </a>
@@ -1231,7 +1231,7 @@ class MailSender {
   `;
     }
     investmentConfirmationTemplate(userData) {
-        const { _id, userId, amount, roi, TotalReturns = 0, lastRoiAt, investmentType, investmentStatus, investmentStartDate, createdAt, formatType, appName = "ALTHWORLD-GLOBAL" } = userData;
+        const { _id, userId, amount, roi, TotalReturns = 0, lastRoiAt, investmentType, investmentStatus, investmentStartDate, createdAt, formatType, appName = "Nova-Wealth-GLOBAL" } = userData;
         // Format dates
         const startDate = new Date(investmentStartDate);
         const createdDate = new Date(createdAt);
@@ -1350,7 +1350,7 @@ class MailSender {
           
           <!-- Button -->
           <div style="text-align: center;">
-            <a href="https://althworldglobal.com/investments" 
+            <a href="https://Nova-Wealthglobal.com/investments" 
                style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 16px 40px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 15px 25px -8px rgba(102, 126, 234, 0.4);">
               Track My Investment →
             </a>

@@ -27,6 +27,7 @@ export interface ITransaction extends Document {
     userEmail: string;
     userFullName: string;
     description: string;
+    uniqueId: string;
 }
 
 const TransactionSchema = new Schema<ITransaction>(
@@ -58,7 +59,8 @@ const TransactionSchema = new Schema<ITransaction>(
             type: String,
         },
         userFullName: { type: String },
-        description: { type: String }
+        description: { type: String },
+        uniqueId: { type: String },
     }
 )
 

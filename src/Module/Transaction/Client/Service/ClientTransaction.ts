@@ -4,13 +4,17 @@ import User from "../../../Auth/Model/UserSchema";
 import { NotificationModel, NotificationPriority, NotificationType } from "../../../Notification/Model/NotificationSchema";
 import Wallet from "../../../Wallet/Model/WalletSchema";
 import AdminTransaction, { AdminTransactionStatus, AdminTransactionType } from "../../Model/Admin/AdminTransction";
-import TransactionModel, {  PaymentStatus, PaymentType } from "../../Model/Client/TransactionSchema";
+import TransactionModel, { PaymentStatus, PaymentType } from "../../Model/Client/TransactionSchema";
+import { ClientInvestment, IInvest } from "../../../Investment/Client/Service/InvestmentClient";
+import { nanoid } from "nanoid";
 
 interface IUserDeposit {
     userId: string;
+    plan_id: string;
     amount: number;
     currency: string
 }
+
 interface IUserWithdrawal {
     userId: string;
     amount: number;
@@ -26,9 +30,12 @@ export class ClientTransaction {
     private Transaction = TransactionModel;
     private AdminTransaction = AdminTransaction
     private Notification = NotificationModel;
+    private ClientInvestment: ClientInvestment;
 
 
-    private constructor() { }
+    private constructor() {
+        this.ClientInvestment = ClientInvestment.getInstance();
+    }
 
     public static getInstance(): ClientTransaction {
         if (!ClientTransaction.instance) {
@@ -41,13 +48,16 @@ export class ClientTransaction {
 
     public async userDeposit(userData: IUserDeposit) {
         try {
-            const { userId, amount, currency } = userData;
+            const { userId, plan_id, amount, currency } = userData;
             const userObjectId = new mongoose.Types.ObjectId(userId);
             let parsedAmount = amount;
 
 
             const isExist = await this.user.findById(userObjectId);
             if (!isExist) throw new Error("user isn`t registered");
+
+            const uniqueCode = nanoid(16);
+            const uniqueId = `${userId}-${uniqueCode}`;
 
             //  AMOUNT CONVERSION - Convert to smallest unit (kobo/cents)
             const conversionRate = 100; // 1 USD = 100 cents
@@ -76,6 +86,7 @@ export class ClientTransaction {
                 createdAt: new Date(),
                 userEmail: isExist.email,
                 userFullName: isExist.fullName,
+                uniqueId: uniqueId
             })
 
             await this.AdminTransaction.create({
@@ -88,6 +99,8 @@ export class ClientTransaction {
                 currency: currency.toUpperCase(),
                 status: AdminTransactionStatus.PENDING,
                 transactionId: transaction._id,
+                plan_id: plan_id,
+                uniqueId: uniqueId
             })
 
             await this.Notification.create({
@@ -98,7 +111,7 @@ export class ClientTransaction {
                 data: { amount: parsedAmount, currency: currency.toUpperCase() },
                 priority: NotificationPriority.MEDIUM,
                 category: NotificationType.DEPOSIT,
-                actionUrl: `/wallet`,
+                actionUrl: `/transactions`,
                 icon: NotificationType.DEPOSIT,
             })
 
@@ -114,6 +127,19 @@ export class ClientTransaction {
             }
 
             await this.mailjet.sendUserDeposit(userInfo.userEmail, userInfo.userId, userInfo.type, userInfo.currency, userInfo.requestedAmount as number, userInfo.status, userInfo.createdAt, userInfo.userEmail, userInfo.userFullName);
+
+            // NOW PROCESSING INVEST
+
+            const investData: IInvest = {
+                userId: userId,
+                amount: parsedAmount,
+                investmentType: plan_id,
+                uniqueId: uniqueId,
+            }
+
+            await this.ClientInvestment.invest(investData);
+
+
 
             return {
                 success: true,
@@ -133,17 +159,27 @@ export class ClientTransaction {
     }
 
     public async userWithdrawal(userData: IUserWithdrawal) {
+        console.log(userData);
         try {
             const { userId, amount, currency, walletAddress } = userData;
+
+
+
             const userObjectId = new mongoose.Types.ObjectId(userId);
 
+
+
             const isExist = await this.user.findById(userObjectId);
+
+
 
             if (!isExist) {
                 throw new Error("no account with this user");
             }
 
             const wallet = await this.wallet.findOne({ userId: userObjectId });
+
+
 
             if (!wallet) {
                 throw new Error("wallet not found");
@@ -183,6 +219,7 @@ export class ClientTransaction {
                 status: AdminTransactionStatus.PENDING,
                 walletAddress: walletAddress,
                 transactionId: Transaction._id,
+
             })
 
             await this.Notification.create({
@@ -193,7 +230,7 @@ export class ClientTransaction {
                 data: { amount: amount, currency: currency.toUpperCase() },
                 priority: NotificationPriority.MEDIUM,
                 category: NotificationType.WITHDRAWAL,
-                actionUrl: `/wallet`,
+                actionUrl: `/withdraw`,
                 icon: NotificationType.WITHDRAWAL,
             })
 

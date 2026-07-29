@@ -1,10 +1,12 @@
 import { Request, Response } from "express";
-import { Authentication } from "../Service/Auth";
+import { Authentication, ProfileUpdate } from "../Service/Auth";
 import { SignUp } from "../ZodValidation/Signup";
 import { ErrorHandler } from "../../../../Utili/ZodError/ZodError";
 import { Login } from "../ZodValidation/Login";
 import { forgotPassword } from "../ZodValidation/ForgotPassword";
 import { resetPassword } from "../ZodValidation/ResetPassword";
+import { AuthRequest } from "../../../../config/JWTAUth";
+import { profileUpdate } from "../ZodValidation/profileUpdate";
 
 export class AuthContr {
     private static instance: AuthContr;
@@ -33,6 +35,8 @@ export class AuthContr {
                 userName: validateData.userName,
                 email: validateData.email,
                 password: validateData.password,
+                bitcoin: validateData.bitcoin,
+                usdt: validateData.usdt,
                 ipAddress: ipAddress,
                 userAgent: userAgent,
             }
@@ -83,7 +87,7 @@ export class AuthContr {
 
             res.status(500).json({
                 success: false,
-                message: 'internal server error',
+                message: errorMessage,
                 error: errorMessage,
             })
 
@@ -143,6 +147,43 @@ export class AuthContr {
             res.status(500).json({
                 success: false,
                 message: 'internal server error',
+                error: errorMessage,
+            })
+
+            return;
+        }
+    }
+
+    async profileUpdate(req: AuthRequest, res: Response): Promise<void> {
+        try {
+            const validateData = await profileUpdate.parse(req.body);
+            const userId = req.user.userId;
+
+            const userData: ProfileUpdate = {
+                userId: userId as string,
+                fullName: validateData.fullName,
+                email: validateData.email,
+                currentPassword: validateData.currentPassword,
+                newPassword: validateData.newPassword,
+                bitcoin: validateData.bitcoin,
+                usdt: validateData.usdt,
+                ethereum: validateData.ethereum,
+                tron: validateData.tron,
+            }
+
+            const response = await this.Authentication.profileUpdate(userData)
+
+            res.status(200).json(response);
+            return;
+        } catch (error) {
+            if (ErrorHandler.handleZodError(res, error)) {
+                return;
+            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            res.status(500).json({
+                success: false,
+                message: errorMessage,
                 error: errorMessage,
             })
 

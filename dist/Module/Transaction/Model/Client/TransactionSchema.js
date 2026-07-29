@@ -77,7 +77,8 @@ const TransactionSchema = new mongoose_1.Schema({
         type: String,
     },
     userFullName: { type: String },
-    description: { type: String }
+    description: { type: String },
+    uniqueId: { type: String },
 });
 const TransactionModel = mongoose_1.default.model("Transaction", TransactionSchema);
 exports.default = TransactionModel;

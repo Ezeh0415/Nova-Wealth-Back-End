@@ -28,6 +28,7 @@ class GetDashboardContr {
     async getInvestPlan(req, res) {
         try {
             const investPlan = await this.serviceDashBoard.getInvestPlan();
+            res.status(200).json(investPlan);
         }
         catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);

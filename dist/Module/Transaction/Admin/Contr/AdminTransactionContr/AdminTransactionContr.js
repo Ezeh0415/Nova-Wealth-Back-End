@@ -5,6 +5,7 @@ const AdminTransaction_1 = require("../../ZodValidation/AdminTransaction");
 const ZodError_1 = require("../../../../../Utili/ZodError/ZodError");
 const AdminTransacrion_1 = require("../../Service/AdminTransacrion");
 const confirmDeposit_1 = require("../../ZodValidation/confirmDeposit");
+const confirmWithdraw_1 = require("../../ZodValidation/confirmWithdraw");
 class AdminTransactionContr {
     constructor() {
         this.AdminTransction = AdminTransacrion_1.AdminTransction.getInstance();
@@ -39,8 +40,8 @@ class AdminTransactionContr {
     async confirmDeposit(req, res) {
         try {
             const validateData = confirmDeposit_1.confirmDeposit.parse(req.body);
-            const { userId, transactionId } = validateData;
-            const userData = { userId: userId, transactionId: transactionId };
+            const { transactionId } = validateData;
+            const userData = { transactionId: transactionId };
             const data = await this.AdminTransction.confirmDeposit(userData);
             res.status(200).json(data);
             return;
@@ -61,8 +62,8 @@ class AdminTransactionContr {
     async cancelDeposit(req, res) {
         try {
             const validateData = confirmDeposit_1.confirmDeposit.parse(req.body);
-            const { userId, transactionId } = validateData;
-            const userData = { userId: userId, transactionId: transactionId };
+            const { transactionId } = validateData;
+            const userData = { transactionId: transactionId };
             const data = await this.AdminTransction.cancelDeposit(userData);
             res.status(200).json(data);
             return;
@@ -82,7 +83,7 @@ class AdminTransactionContr {
     }
     async confirmWithdrawal(req, res) {
         try {
-            const validateData = confirmDeposit_1.confirmDeposit.parse(req.body);
+            const validateData = confirmWithdraw_1.confirmWithdraw.parse(req.body);
             const { userId, transactionId } = validateData;
             const userData = { userId: userId, transactionId: transactionId };
             const data = await this.AdminTransction.confirmWithdrawal(userData);
@@ -104,7 +105,7 @@ class AdminTransactionContr {
     }
     async cancelWithdrawal(req, res) {
         try {
-            const validateData = confirmDeposit_1.confirmDeposit.parse(req.body);
+            const validateData = confirmWithdraw_1.confirmWithdraw.parse(req.body);
             const { userId, transactionId } = validateData;
             const userData = { userId: userId, transactionId: transactionId };
             const data = await this.AdminTransction.CancelWithdrawal(userData);

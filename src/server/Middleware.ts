@@ -21,8 +21,8 @@ export class MiddlewareConfig {
     private configureBodyParser(): void {
 
         const allowedOrigins: string[] = [
-            "https://althworldf.onrender.com", // Production frontend
-            "https://althworldglobal.com", //live domain
+            "https://Nova-Wealthf.onrender.com", // Production frontend
+            "https://Nova-Wealthglobal.com", //live domain
             "http://localhost:5173", // Local development (Vite default)
             "http://localhost:5174", // Local development (Vite default)
             "http://localhost:5175", // Alternate local port

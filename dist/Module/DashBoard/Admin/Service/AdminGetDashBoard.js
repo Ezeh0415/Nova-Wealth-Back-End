@@ -29,13 +29,13 @@ class AdminGetDashBoard {
         if (!isAdmin || isAdmin.role !== "admin") {
             throw new Error("Unauthorized access");
         }
-        const users = await this.user.find().select("fullName userName email role createdAt");
+        const users = await this.user.find({ role: { $ne: 'admin' } }).sort({ createdAt: -1 });
         if (!users) {
             throw new Error("No Users Found");
         }
         const totalUser = await this.user.countDocuments();
         const totalInvestment = await this.investment.countDocuments();
-        const investments = await this.investment.find();
+        const investments = await this.investment.find().sort({ createdAt: -1 });
         const investPlan = await this.InvestPlan.find();
         return {
             users, // All users' personal information

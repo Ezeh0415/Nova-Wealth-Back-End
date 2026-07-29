@@ -1,11 +1,15 @@
 import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
 import User from "../../../Auth/Model/UserSchema";
+import { AdminInvestmentService } from "../../../Investment/Admin/Service/AdminInvestment";
 import { NotificationModel, NotificationType } from "../../../Notification/Model/NotificationSchema";
 import Wallet from "../../../Wallet/Model/WalletSchema";
 import AdminTransaction, { AdminTransactionConfirmation, AdminTransactionStatus } from "../../Model/Admin/AdminTransction";
 import TransactionModel, { PaymentStatus } from "../../Model/Client/TransactionSchema";
 
 interface IDeposit {
+    transactionId: string;
+}
+interface IWithdrawal {
     userId: string;
     transactionId: string;
 }
@@ -18,8 +22,11 @@ export class AdminTransction {
     private Transaction = TransactionModel;
     private Notification = NotificationModel;
     private mailjet = MailSender.getInstance()
+    private AdminInvestmentService: AdminInvestmentService;
 
-    private constructor() { }
+    private constructor() {
+        this.AdminInvestmentService = AdminInvestmentService.getInstance();
+    }
 
     public static getInstance(): AdminTransction {
         if (!AdminTransction.instance) {
@@ -51,10 +58,10 @@ export class AdminTransction {
 
     public async confirmDeposit(userData: IDeposit) {
         try {
-            const { userId, transactionId } = userData;
+            const { transactionId } = userData;
 
             const checkTransaction = await this.AdminSchema.findOne({
-                transactionId: transactionId
+                uniqueId: transactionId
             });
 
             if (!checkTransaction) {
@@ -69,7 +76,7 @@ export class AdminTransction {
                 throw new Error("Transaction already Confirmed");
             }
 
-            const user = await this.user.findOne({ _id: userId });
+            const user = await this.user.findOne({ _id: checkTransaction?.userId });
 
             if (!user) {
                 throw new Error(`user not found`);
@@ -89,17 +96,15 @@ export class AdminTransction {
                 await user.save(); // Save updated user
             }
 
-            const wallet = await this.wallet.findOne({ userId });
+            const wallet = await this.wallet.findOne({ userId: checkTransaction?.userId });
             if (!wallet) {
                 throw new Error("wallet not found ")
             }
 
             let transaction;
-            if (/^[0-9a-fA-F]{24}$/.test(transactionId)) {
-                transaction = await this.Transaction.findById(transactionId);
-            }
+            
             if (!transaction) {
-                transaction = await this.Transaction.findOne({ transactionId } as any);
+                transaction = await this.Transaction.findOne({ uniqueId: transactionId } as any);
             }
 
             if (!transaction) {
@@ -115,9 +120,7 @@ export class AdminTransction {
             const creditedAmountInKobo = checkTransaction.creditedAmount;
 
             // 8. WALLET UPDATE
-            wallet.pending -= creditedAmountInKobo;
             wallet.totalDeposits += creditedAmountInKobo;
-            wallet.balance += creditedAmountInKobo;
             await wallet.save();
 
             // 9. TRANSACTION UPDATE
@@ -134,7 +137,7 @@ export class AdminTransction {
 
 
             await this.Notification.create({
-                user: userId,
+                user: checkTransaction?.userId,
                 type: NotificationType.DEPOSIT,
                 title: "Deposit Confirmed",
                 message: `Your deposit of $${(creditedAmountInKobo / 100).toFixed(2)} has been confirmed.${isFirstDeposit ? " This was your first deposit!" : ""}`,
@@ -142,7 +145,7 @@ export class AdminTransction {
             })
 
             const userEmailInput = {
-                userId: userId,
+                userId: checkTransaction?.userId,
                 type: transaction.type,
                 currency: transaction.currency,
                 creditedAmount: checkTransaction.creditedAmount, // $1,250.00
@@ -155,6 +158,11 @@ export class AdminTransction {
             }
 
             await this.mailjet.confirmDeposit(user.email, userEmailInput.userId, userEmailInput.type, userEmailInput.currency, userEmailInput.creditedAmount, userEmailInput.status, userEmailInput.creditedAt, userEmailInput.userEmail, userEmailInput.userFullName, userEmailInput.transactionId, userEmailInput.isFirstDeposit);
+
+
+
+            // ATTACH INVEST COMPLETE HERE
+            await this.AdminInvestmentService.confirmInvestment(checkTransaction?.uniqueId as string);
 
             return {
                 success: true,
@@ -169,7 +177,7 @@ export class AdminTransction {
         }
     }
 
-    public async confirmWithdrawal(userData: IDeposit) {
+    public async confirmWithdrawal(userData: IWithdrawal) {
         try {
             const { userId, transactionId } = userData;
             // 1. FIND ADMIN TRANSACTION
@@ -260,10 +268,10 @@ export class AdminTransction {
     public async cancelDeposit(userData: IDeposit) {
 
         try {
-            const { userId, transactionId } = userData;
+            const { transactionId } = userData;
             // 1. FIND ADMIN TRANSACTION
             const adminTransaction = await this.AdminSchema.findOne({
-                transactionId: transactionId,
+                uniqueId: transactionId,
             });
             if (!adminTransaction)
                 throw new Error(
@@ -275,27 +283,25 @@ export class AdminTransction {
                 throw new Error("Transaction already confirmed");
 
             // 3. FIND MAIN TRANSACTION
-            const transaction = await this.Transaction.findById(transactionId);
+            const transaction = await this.Transaction.findOne({ uniqueId: transactionId });
             if (!transaction) throw new Error("Transaction not found");
 
             // 4. FIND USER WALLET
-            const wallet = await this.wallet.findOne({ userId });
+            const wallet = await this.wallet.findOne({ userId: adminTransaction?.userId });
             if (!wallet) throw new Error("Wallet not found");
 
             // 5. TRANSACTION UPDATE - Mark as canceled
             transaction.status = PaymentStatus.CANCELLED;
             await transaction.save();
 
-            const creditedAmountInKobo = adminTransaction.creditedAmount;
-
-            if (wallet.pending < creditedAmountInKobo) {
-                wallet.pending -= creditedAmountInKobo
-                wallet.save();
-            }
-
             // 7. ADMIN TRANSACTION UPDATE
+            adminTransaction.status = AdminTransactionStatus.CANCELLED;
             adminTransaction.isConfirmed = AdminTransactionConfirmation.FALSE;
             await adminTransaction.save();
+
+            // ATTACH INVEST COMPLETE HERE
+            await this.AdminInvestmentService.cancelInvestment(adminTransaction?.uniqueId as string);
+
 
             return {
                 success: true,
@@ -308,7 +314,7 @@ export class AdminTransction {
         }
     }
 
-    public async CancelWithdrawal(userData: IDeposit) {
+    public async CancelWithdrawal(userData: IWithdrawal) {
         try {
             const { userId, transactionId } = userData;
 

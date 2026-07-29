@@ -102,7 +102,7 @@ class ClientInvestment {
     }
     async invest(Data) {
         try {
-            const { userId, amount, investmentType } = Data;
+            const { userId, amount, investmentType, uniqueId } = Data;
             const plan = await this.InvestPlan.findOne({
                 planId: investmentType,
                 isActive: true,
@@ -130,11 +130,11 @@ class ClientInvestment {
                 throw new Error("Wallet not found for user");
             }
             const creditedAmountInKobo = amount * 100;
-            if (wallet.balance < creditedAmountInKobo) {
+            if (wallet.pending < creditedAmountInKobo) {
                 throw new Error(`Insufficient balance. Available: $${wallet.balance / 100}, Required: $${amount}`);
             }
             const roi = plan.roi;
-            wallet.balance -= creditedAmountInKobo;
+            wallet.pending -= creditedAmountInKobo;
             wallet.pendingInvestment =
                 (wallet.pendingInvestment || 0) + creditedAmountInKobo;
             await wallet.save();
@@ -146,6 +146,7 @@ class ClientInvestment {
                 investmentPlanName: plan.name, // Store plan name for reference
                 investmentStatus: InvestmentSchema_1.InvestmentStatus.PENDING,
                 planId: plan.planId, // Reference to plan
+                uniqueId: uniqueId
             });
             await investment.save();
             const transaction = new this.Transaction({
@@ -155,6 +156,7 @@ class ClientInvestment {
                 description: `Investment request - ${plan.name} (${investmentType})`,
                 status: TransactionSchema_1.PaymentStatus.PENDING,
                 transactionId: investment._id,
+                uniqueId: uniqueId
             });
             await transaction.save();
             const adminTransaction = new this.adminTransaction({
@@ -168,6 +170,8 @@ class ClientInvestment {
                 status: AdminTransction_1.AdminTransactionStatus.PENDING,
                 investmentType: investmentType,
                 investmentPlanName: plan.name,
+                plan_id: investmentType,
+                uniqueId: uniqueId
             });
             await adminTransaction.save();
             await this.Notification.create({
@@ -196,7 +200,7 @@ class ClientInvestment {
                 investmentStartDate: investment.investmentStartDate,
                 createdAt: investment.createdAt,
                 formatType: "Request Created",
-                appName: "ALTHWORLD-GLOBAL"
+                appName: "Nova-Wealth-GLOBAL"
             };
             const subject = `${user.fullName} Your ${plan.name} investment request of $${amount} has been created and is pending approval.`;
             await this.mailjet.Investment(user.email, subject, userData);

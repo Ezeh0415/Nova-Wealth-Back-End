@@ -42,7 +42,7 @@ class userUpdateContr {
     }
     async AdminUpdateUser(req, res) {
         try {
-            const userId = req.body.userId;
+            const userId = req.body.updateData.userId;
             if (!userId) {
                 res.status(400).json({
                     status: "error",
@@ -50,7 +50,7 @@ class userUpdateContr {
                 });
                 return;
             }
-            const user = await this.userUpdateService.AdminUpdateUser(userId, req.body);
+            const user = await this.userUpdateService.AdminUpdateUser(userId, req.body.updateData);
             res.status(200).json({ success: true, user });
             return;
         }

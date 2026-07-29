@@ -66,13 +66,17 @@ const AdminTransactionSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
         required: true,
-        index: true, // ✅ Index for user lookups
+        index: true, //  Index for user lookups
     },
     transactionId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "Transaction",
         required: true,
-        index: true, // ✅ Index for transaction lookups
+        index: true, //  Index for transaction lookups
+    },
+    plan_id: {
+        type: String,
+        required: false,
     },
     fullName: {
         type: String,
@@ -81,12 +85,12 @@ const AdminTransactionSchema = new mongoose_1.Schema({
     userName: {
         type: String,
         required: true,
-        index: true, // ✅ Index for username searches
+        index: true, //  Index for username searches
     },
     email: {
         type: String,
         required: true,
-        index: true, // ✅ Index for email searches
+        index: true, //  Index for email searches
     },
     creditedAmount: {
         type: Number,
@@ -97,13 +101,13 @@ const AdminTransactionSchema = new mongoose_1.Schema({
         type: String,
         enum: Object.values(AdminTransactionType),
         required: true,
-        index: true, // ✅ Index for type filtering
+        index: true, //  Index for type filtering
     },
     status: {
         type: String,
         enum: Object.values(AdminTransactionStatus),
         default: AdminTransactionStatus.PENDING,
-        index: true, // ✅ Index for status filtering
+        index: true, //  Index for status filtering
     },
     currency: {
         type: String,
@@ -117,12 +121,13 @@ const AdminTransactionSchema = new mongoose_1.Schema({
         type: String,
         enum: Object.values(AdminTransactionConfirmation),
         default: AdminTransactionConfirmation.PENDING,
-        index: true, // ✅ Index for confirmation status
+        index: true, //  Index for confirmation status
     },
     investmentType: {
         type: String,
         index: true,
-    }
+    },
+    uniqueId: { type: String },
 }, {
     timestamps: true,
 });

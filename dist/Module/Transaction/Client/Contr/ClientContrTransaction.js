@@ -17,12 +17,14 @@ class clientContrTransaction {
     }
     ;
     async userDeposit(req, res) {
+        console.log("ran deposit");
         try {
             const validateData = userDeposit_1.userDeposit.parse(req.body);
-            const { amount, paymentType } = validateData;
+            const { plan_id, amount, paymentType } = validateData;
             const userId = req.user.userId;
             const userData = {
                 userId: userId,
+                plan_id: plan_id,
                 amount: amount,
                 currency: paymentType,
             };

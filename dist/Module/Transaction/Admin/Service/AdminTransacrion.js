@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminTransction = void 0;
 const Mailjet_1 = require("../../../../Middleware/GmailSetup/Mailjet");
 const UserSchema_1 = __importDefault(require("../../../Auth/Model/UserSchema"));
+const AdminInvestment_1 = require("../../../Investment/Admin/Service/AdminInvestment");
 const NotificationSchema_1 = require("../../../Notification/Model/NotificationSchema");
 const WalletSchema_1 = __importDefault(require("../../../Wallet/Model/WalletSchema"));
 const AdminTransction_1 = __importStar(require("../../Model/Admin/AdminTransction"));
@@ -51,6 +52,7 @@ class AdminTransction {
         this.Transaction = TransactionSchema_1.default;
         this.Notification = NotificationSchema_1.NotificationModel;
         this.mailjet = Mailjet_1.MailSender.getInstance();
+        this.AdminInvestmentService = AdminInvestment_1.AdminInvestmentService.getInstance();
     }
     static getInstance() {
         if (!AdminTransction.instance) {
@@ -75,9 +77,9 @@ class AdminTransction {
     }
     async confirmDeposit(userData) {
         try {
-            const { userId, transactionId } = userData;
+            const { transactionId } = userData;
             const checkTransaction = await this.AdminSchema.findOne({
-                transactionId: transactionId
+                uniqueId: transactionId
             });
             if (!checkTransaction) {
                 throw new Error(`Admin transaction not found with transactionId: ${transactionId}`);
@@ -85,7 +87,7 @@ class AdminTransction {
             if (checkTransaction.isConfirmed === "true") {
                 throw new Error("Transaction already Confirmed");
             }
-            const user = await this.user.findOne({ _id: userId });
+            const user = await this.user.findOne({ _id: checkTransaction?.userId });
             if (!user) {
                 throw new Error(`user not found`);
             }
@@ -102,16 +104,13 @@ class AdminTransction {
                 user.firstDepositDate = new Date(); // Record the date
                 await user.save(); // Save updated user
             }
-            const wallet = await this.wallet.findOne({ userId });
+            const wallet = await this.wallet.findOne({ userId: checkTransaction?.userId });
             if (!wallet) {
                 throw new Error("wallet not found ");
             }
             let transaction;
-            if (/^[0-9a-fA-F]{24}$/.test(transactionId)) {
-                transaction = await this.Transaction.findById(transactionId);
-            }
             if (!transaction) {
-                transaction = await this.Transaction.findOne({ transactionId });
+                transaction = await this.Transaction.findOne({ uniqueId: transactionId });
             }
             if (!transaction) {
                 throw new Error(`Transaction not found with ID: ${transactionId}. Tried both _id and transactionId fields.`);
@@ -121,9 +120,7 @@ class AdminTransction {
             }
             const creditedAmountInKobo = checkTransaction.creditedAmount;
             // 8. WALLET UPDATE
-            wallet.pending -= creditedAmountInKobo;
             wallet.totalDeposits += creditedAmountInKobo;
-            wallet.balance += creditedAmountInKobo;
             await wallet.save();
             // 9. TRANSACTION UPDATE
             transaction.requestedAmount -= checkTransaction.creditedAmount;
@@ -136,14 +133,14 @@ class AdminTransction {
             checkTransaction.isConfirmed = AdminTransction_1.AdminTransactionConfirmation.TRUE;
             await checkTransaction.save();
             await this.Notification.create({
-                user: userId,
+                user: checkTransaction?.userId,
                 type: NotificationSchema_1.NotificationType.DEPOSIT,
                 title: "Deposit Confirmed",
                 message: `Your deposit of $${(creditedAmountInKobo / 100).toFixed(2)} has been confirmed.${isFirstDeposit ? " This was your first deposit!" : ""}`,
                 category: NotificationSchema_1.NotificationType.DEPOSIT,
             });
             const userEmailInput = {
-                userId: userId,
+                userId: checkTransaction?.userId,
                 type: transaction.type,
                 currency: transaction.currency,
                 creditedAmount: checkTransaction.creditedAmount, // $1,250.00
@@ -155,6 +152,8 @@ class AdminTransction {
                 isFirstDeposit: isFirstDeposit,
             };
             await this.mailjet.confirmDeposit(user.email, userEmailInput.userId, userEmailInput.type, userEmailInput.currency, userEmailInput.creditedAmount, userEmailInput.status, userEmailInput.creditedAt, userEmailInput.userEmail, userEmailInput.userFullName, userEmailInput.transactionId, userEmailInput.isFirstDeposit);
+            // ATTACH INVEST COMPLETE HERE
+            await this.AdminInvestmentService.confirmInvestment(checkTransaction?.uniqueId);
             return {
                 success: true,
                 message: "Deposit confirmed successfully",
@@ -242,10 +241,10 @@ class AdminTransction {
     }
     async cancelDeposit(userData) {
         try {
-            const { userId, transactionId } = userData;
+            const { transactionId } = userData;
             // 1. FIND ADMIN TRANSACTION
             const adminTransaction = await this.AdminSchema.findOne({
-                transactionId: transactionId,
+                uniqueId: transactionId,
             });
             if (!adminTransaction)
                 throw new Error(`Admin transaction not found with transactionId: ${transactionId}`);
@@ -253,24 +252,22 @@ class AdminTransction {
             if (adminTransaction.isConfirmed === "true")
                 throw new Error("Transaction already confirmed");
             // 3. FIND MAIN TRANSACTION
-            const transaction = await this.Transaction.findById(transactionId);
+            const transaction = await this.Transaction.findOne({ uniqueId: transactionId });
             if (!transaction)
                 throw new Error("Transaction not found");
             // 4. FIND USER WALLET
-            const wallet = await this.wallet.findOne({ userId });
+            const wallet = await this.wallet.findOne({ userId: adminTransaction?.userId });
             if (!wallet)
                 throw new Error("Wallet not found");
             // 5. TRANSACTION UPDATE - Mark as canceled
             transaction.status = TransactionSchema_1.PaymentStatus.CANCELLED;
             await transaction.save();
-            const creditedAmountInKobo = adminTransaction.creditedAmount;
-            if (wallet.pending < creditedAmountInKobo) {
-                wallet.pending -= creditedAmountInKobo;
-                wallet.save();
-            }
             // 7. ADMIN TRANSACTION UPDATE
+            adminTransaction.status = AdminTransction_1.AdminTransactionStatus.CANCELLED;
             adminTransaction.isConfirmed = AdminTransction_1.AdminTransactionConfirmation.FALSE;
             await adminTransaction.save();
+            // ATTACH INVEST COMPLETE HERE
+            await this.AdminInvestmentService.cancelInvestment(adminTransaction?.uniqueId);
             return {
                 success: true,
                 message: "deposit canceled",

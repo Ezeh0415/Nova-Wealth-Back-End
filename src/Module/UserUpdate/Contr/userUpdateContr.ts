@@ -54,7 +54,7 @@ export class userUpdateContr {
 
     public async AdminUpdateUser(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const userId = req.body.userId;
+            const userId = req.body.updateData.userId;
 
             if (!userId) {
                 res.status(400).json({
@@ -67,7 +67,7 @@ export class userUpdateContr {
 
             const user = await this.userUpdateService.AdminUpdateUser(
                 userId,
-                req.body,
+                req.body.updateData,
             )
 
             res.status(200).json({ success: true, user });

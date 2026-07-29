@@ -44,6 +44,8 @@ const NotificationSchema_1 = require("../../../Notification/Model/NotificationSc
 const WalletSchema_1 = __importDefault(require("../../../Wallet/Model/WalletSchema"));
 const AdminTransction_1 = __importStar(require("../../Model/Admin/AdminTransction"));
 const TransactionSchema_1 = __importStar(require("../../Model/Client/TransactionSchema"));
+const InvestmentClient_1 = require("../../../Investment/Client/Service/InvestmentClient");
+const nanoid_1 = require("nanoid");
 class ClientTransaction {
     constructor() {
         this.mailjet = Mailjet_1.MailSender.getInstance();
@@ -52,6 +54,7 @@ class ClientTransaction {
         this.Transaction = TransactionSchema_1.default;
         this.AdminTransaction = AdminTransction_1.default;
         this.Notification = NotificationSchema_1.NotificationModel;
+        this.ClientInvestment = InvestmentClient_1.ClientInvestment.getInstance();
     }
     static getInstance() {
         if (!ClientTransaction.instance) {
@@ -61,12 +64,14 @@ class ClientTransaction {
     }
     async userDeposit(userData) {
         try {
-            const { userId, amount, currency } = userData;
+            const { userId, plan_id, amount, currency } = userData;
             const userObjectId = new mongoose_1.default.Types.ObjectId(userId);
             let parsedAmount = amount;
             const isExist = await this.user.findById(userObjectId);
             if (!isExist)
                 throw new Error("user isn`t registered");
+            const uniqueCode = (0, nanoid_1.nanoid)(16);
+            const uniqueId = `${userId}-${uniqueCode}`;
             //  AMOUNT CONVERSION - Convert to smallest unit (kobo/cents)
             const conversionRate = 100; // 1 USD = 100 cents
             const creditedAmountInKobo = Math.round(parsedAmount * conversionRate);
@@ -90,6 +95,7 @@ class ClientTransaction {
                 createdAt: new Date(),
                 userEmail: isExist.email,
                 userFullName: isExist.fullName,
+                uniqueId: uniqueId
             });
             await this.AdminTransaction.create({
                 userId: userObjectId,
@@ -101,6 +107,8 @@ class ClientTransaction {
                 currency: currency.toUpperCase(),
                 status: AdminTransction_1.AdminTransactionStatus.PENDING,
                 transactionId: transaction._id,
+                plan_id: plan_id,
+                uniqueId: uniqueId
             });
             await this.Notification.create({
                 user: userObjectId,
@@ -110,7 +118,7 @@ class ClientTransaction {
                 data: { amount: parsedAmount, currency: currency.toUpperCase() },
                 priority: NotificationSchema_1.NotificationPriority.MEDIUM,
                 category: NotificationSchema_1.NotificationType.DEPOSIT,
-                actionUrl: `/wallet`,
+                actionUrl: `/transactions`,
                 icon: NotificationSchema_1.NotificationType.DEPOSIT,
             });
             const userInfo = {
@@ -124,6 +132,14 @@ class ClientTransaction {
                 userFullName: isExist.fullName,
             };
             await this.mailjet.sendUserDeposit(userInfo.userEmail, userInfo.userId, userInfo.type, userInfo.currency, userInfo.requestedAmount, userInfo.status, userInfo.createdAt, userInfo.userEmail, userInfo.userFullName);
+            // NOW PROCESSING INVEST
+            const investData = {
+                userId: userId,
+                amount: parsedAmount,
+                investmentType: plan_id,
+                uniqueId: uniqueId,
+            };
+            await this.ClientInvestment.invest(investData);
             return {
                 success: true,
                 message: "Deposit request submitted successfully",
@@ -141,6 +157,7 @@ class ClientTransaction {
         }
     }
     async userWithdrawal(userData) {
+        console.log(userData);
         try {
             const { userId, amount, currency, walletAddress } = userData;
             const userObjectId = new mongoose_1.default.Types.ObjectId(userId);
@@ -191,7 +208,7 @@ class ClientTransaction {
                 data: { amount: amount, currency: currency.toUpperCase() },
                 priority: NotificationSchema_1.NotificationPriority.MEDIUM,
                 category: NotificationSchema_1.NotificationType.WITHDRAWAL,
-                actionUrl: `/wallet`,
+                actionUrl: `/withdraw`,
                 icon: NotificationSchema_1.NotificationType.WITHDRAWAL,
             });
             const userInfo = {

@@ -22,15 +22,16 @@ export class clientContrTransaction {
     };
 
     public async userDeposit(req: AuthRequest, res: Response): Promise<void> {
-
+        console.log("ran deposit")
         try {
             const validateData = userDeposit.parse(req.body)
-            const { amount, paymentType } = validateData;
+            const { plan_id, amount, paymentType } = validateData;
 
             const userId = req.user.userId;
 
             const userData = {
                 userId: userId,
+                plan_id: plan_id,
                 amount: amount,
                 currency: paymentType,
             };
@@ -61,9 +62,10 @@ export class clientContrTransaction {
             const { amount, paymentType, walletAddress } = validateData;
             const currency = paymentType;
             const userId = req.user.userId;
+            
 
             const userData = {
-                userId: userId,
+                userId: userId as string,
                 amount: amount,
                 currency: currency,
                 walletAddress: walletAddress,

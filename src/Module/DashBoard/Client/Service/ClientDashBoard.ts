@@ -2,6 +2,7 @@ import User from "../../../Auth/Model/UserSchema";
 import Investment from "../../../Investment/Model/InvestmentSchema";
 import InvestmentPlan from "../../../InvestmentPlan/Model/InvestmentPlanSchema";
 import { NotificationModel } from "../../../Notification/Model/NotificationSchema";
+import Referral from "../../../Referral/Model/Model";
 import TransactionModel from "../../../Transaction/Model/Client/TransactionSchema";
 import Wallet from "../../../Wallet/Model/WalletSchema";
 
@@ -13,6 +14,7 @@ export class ClientDashboard {
     private Transaction = TransactionModel;
     private Notification = NotificationModel;
     private investPlan = InvestmentPlan;
+    private referral = Referral
 
     private constructor() { };
 
@@ -41,6 +43,8 @@ export class ClientDashboard {
             user: userId,
         }).sort({ createdAt: -1 });
 
+        const referral = await this.referral.find({ referrer: userId });
+
         return {
             wallet, // Wallet balance and details
             investments, // All investment records
@@ -49,6 +53,7 @@ export class ClientDashboard {
             Notification,
             accountStatus: user, // User verification status
             user: safeUser,
+            referral,
         };
     }
 

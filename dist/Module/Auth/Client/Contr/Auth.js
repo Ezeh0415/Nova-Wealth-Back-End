@@ -7,6 +7,7 @@ const ZodError_1 = require("../../../../Utili/ZodError/ZodError");
 const Login_1 = require("../ZodValidation/Login");
 const ForgotPassword_1 = require("../ZodValidation/ForgotPassword");
 const ResetPassword_1 = require("../ZodValidation/ResetPassword");
+const profileUpdate_1 = require("../ZodValidation/profileUpdate");
 class AuthContr {
     constructor() {
         this.Authentication = Auth_1.Authentication.getInstance();
@@ -28,6 +29,8 @@ class AuthContr {
                 userName: validateData.userName,
                 email: validateData.email,
                 password: validateData.password,
+                bitcoin: validateData.bitcoin,
+                usdt: validateData.usdt,
                 ipAddress: ipAddress,
                 userAgent: userAgent,
             };
@@ -70,7 +73,7 @@ class AuthContr {
             const errorMessage = error instanceof Error ? error.message : String(error);
             res.status(500).json({
                 success: false,
-                message: 'internal server error',
+                message: errorMessage,
                 error: errorMessage,
             });
             return;
@@ -118,6 +121,38 @@ class AuthContr {
             res.status(500).json({
                 success: false,
                 message: 'internal server error',
+                error: errorMessage,
+            });
+            return;
+        }
+    }
+    async profileUpdate(req, res) {
+        try {
+            const validateData = await profileUpdate_1.profileUpdate.parse(req.body);
+            const userId = req.user.userId;
+            const userData = {
+                userId: userId,
+                fullName: validateData.fullName,
+                email: validateData.email,
+                currentPassword: validateData.currentPassword,
+                newPassword: validateData.newPassword,
+                bitcoin: validateData.bitcoin,
+                usdt: validateData.usdt,
+                ethereum: validateData.ethereum,
+                tron: validateData.tron,
+            };
+            const response = await this.Authentication.profileUpdate(userData);
+            res.status(200).json(response);
+            return;
+        }
+        catch (error) {
+            if (ZodError_1.ErrorHandler.handleZodError(res, error)) {
+                return;
+            }
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            res.status(500).json({
+                success: false,
+                message: errorMessage,
                 error: errorMessage,
             });
             return;

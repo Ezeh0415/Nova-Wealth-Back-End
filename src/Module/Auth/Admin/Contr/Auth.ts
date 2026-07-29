@@ -32,6 +32,7 @@ export class AdminAuthContr {
                 message: "User created successfully",
                 data: result.safeUser,
                 accessToken: result.token,
+                refreshToken: result.refreshToken,
             })
 
         } catch (error) {
@@ -60,6 +61,7 @@ export class AdminAuthContr {
                 message: "Login successful",
                 data: result.safeUser,
                 accessToken: result.accessToken,
+                refreshToken: result.refreshToken,
             });
         } catch (error) {
             if (ErrorHandler.handleZodError(res, error)) {

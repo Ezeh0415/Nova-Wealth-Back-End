@@ -31,6 +31,7 @@ export interface IInvestment extends Document {
     cancelledAt: Date;
     createdAt: Date;
     updatedAt: Date;
+    uniqueId?: string;
 }
 
 // ==================== SCHEMA ====================
@@ -88,7 +89,8 @@ const InvestmentSchema = new Schema<IInvestment>(
         },
         cancelledAt: {
             type: Date,
-        }
+        },
+        uniqueId: { type: String },
     },
     {
         timestamps: true,

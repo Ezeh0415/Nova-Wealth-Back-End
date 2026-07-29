@@ -4,6 +4,7 @@ import { GetTransaction } from "../../ZodValidation/AdminTransaction";
 import { ErrorHandler } from "../../../../../Utili/ZodError/ZodError";
 import { AdminTransction } from "../../Service/AdminTransacrion";
 import { confirmDeposit } from "../../ZodValidation/confirmDeposit";
+import { confirmWithdraw } from "../../ZodValidation/confirmWithdraw";
 
 export class AdminTransactionContr {
     private static instance: AdminTransactionContr
@@ -47,8 +48,8 @@ export class AdminTransactionContr {
     public async confirmDeposit(req: AuthRequest, res: Response): Promise<void> {
         try {
             const validateData = confirmDeposit.parse(req.body);
-            const { userId, transactionId } = validateData;
-            const userData = { userId: userId, transactionId: transactionId }
+            const { transactionId } = validateData;
+            const userData = { transactionId: transactionId }
             const data = await this.AdminTransction.confirmDeposit(userData);
 
             res.status(200).json(data);
@@ -73,8 +74,8 @@ export class AdminTransactionContr {
     public async cancelDeposit(req: AuthRequest, res: Response): Promise<void> {
         try {
             const validateData = confirmDeposit.parse(req.body);
-            const { userId, transactionId } = validateData;
-            const userData = { userId: userId, transactionId: transactionId }
+            const { transactionId } = validateData;
+            const userData = { transactionId: transactionId }
             const data = await this.AdminTransction.cancelDeposit(userData);
 
             res.status(200).json(data);
@@ -98,7 +99,7 @@ export class AdminTransactionContr {
 
     public async confirmWithdrawal(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const validateData = confirmDeposit.parse(req.body);
+            const validateData = confirmWithdraw.parse(req.body);
             const { userId, transactionId } = validateData;
             const userData = { userId: userId, transactionId: transactionId }
             const data = await this.AdminTransction.confirmWithdrawal(userData);
@@ -124,7 +125,7 @@ export class AdminTransactionContr {
 
     public async cancelWithdrawal(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const validateData = confirmDeposit.parse(req.body);
+            const validateData = confirmWithdraw.parse(req.body);
             const { userId, transactionId } = validateData;
             const userData = { userId: userId, transactionId: transactionId }
             const data = await this.AdminTransction.CancelWithdrawal(userData);

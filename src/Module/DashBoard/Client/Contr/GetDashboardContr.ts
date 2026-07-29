@@ -33,7 +33,9 @@ export class GetDashboardContr {
 
     public async getInvestPlan(req: Request, res: Response): Promise<void> {
         try {
+            
             const investPlan = await this.serviceDashBoard.getInvestPlan();
+            res.status(200).json(investPlan)
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             res.status(500).json(errorMessage);

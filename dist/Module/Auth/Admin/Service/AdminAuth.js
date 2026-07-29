@@ -7,7 +7,7 @@ exports.AdminAuth = void 0;
 const Config_1 = require("../../../../config/Config");
 const GetJwtToken_1 = require("../../../../Middleware/jwtConfig/GetJwtToken");
 const UserSchema_1 = __importDefault(require("../../Model/UserSchema"));
-const bcryptJs_1 = __importDefault(require("bcryptJs"));
+const bcrypt_1 = __importDefault(require("bcrypt"));
 class AdminAuth {
     constructor() {
         this.user = UserSchema_1.default;
@@ -27,7 +27,7 @@ class AdminAuth {
             if (isExist) {
                 throw new Error("credentials Already in use");
             }
-            const hashedPassword = await bcryptJs_1.default.hash(userData.password, this.SALT_ROUNDS);
+            const hashedPassword = await bcrypt_1.default.hash(userData.password, this.SALT_ROUNDS);
             const newUser = new this.user({
                 fullName: userData.fullName,
                 userName: userData.userName,
@@ -47,7 +47,8 @@ class AdminAuth {
             const { password: _, ...safeUser } = newUser.toObject();
             return {
                 safeUser,
-                token
+                token,
+                refreshToken
             };
         }
         catch (error) {
@@ -57,11 +58,11 @@ class AdminAuth {
     }
     async adminLogin(userData) {
         try {
-            const isExist = await this.user.findOne({ email: userData.email });
+            const isExist = await this.user.findOne({ email: userData.email }).select('+password');
             if (!isExist) {
                 throw new Error("invalid user cridentials");
             }
-            const isPasswordCorrect = await bcryptJs_1.default.compare(userData.password, isExist.password);
+            const isPasswordCorrect = await bcrypt_1.default.compare(userData.password, isExist?.password);
             if (!isPasswordCorrect) {
                 throw new Error("password dosen`t match");
             }
@@ -71,7 +72,8 @@ class AdminAuth {
             const { password: _, ...safeUser } = isExist.toObject();
             return {
                 safeUser,
-                accessToken
+                accessToken,
+                refreshToken
             };
         }
         catch (error) {

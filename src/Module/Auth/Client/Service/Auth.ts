@@ -3,11 +3,35 @@ import { NotificationModel, NotificationPriority, NotificationType } from "../..
 import Referral from "../../../Referral/Model/Model";
 import Wallet from "../../../Wallet/Model/WalletSchema";
 import User, { IUser } from "../../Model/UserSchema";
-import bcrypt from 'bcryptJs';
+import bcrypt from 'bcrypt';
 import { nanoid } from "nanoid";
 import { MailSender } from "../../../../Middleware/GmailSetup/Mailjet";
 import { TokenService } from "../../../../Middleware/jwtConfig/GetJwtToken";
 import { ResetTokenModel } from "../../Model/ResetToken";
+
+interface SignUpDTO {
+    fullName: string;
+    userName: string;
+    email: string;
+    password: string;
+    bitcoin?: string;
+    usdt?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    referralCode?: string;
+}
+
+export interface ProfileUpdate {
+    userId: string,
+    fullName: string,
+    email: string,
+    currentPassword?: string,
+    newPassword?: string,
+    bitcoin?: string,
+    usdt?: string,
+    ethereum?: string,
+    tron?: string,
+}
 
 export class Authentication {
     private static instance: Authentication;
@@ -35,52 +59,68 @@ export class Authentication {
         return Authentication.instance;
     }
 
-    public async SignUp(userData: Partial<IUser>) {
+    public async SignUp(userData: SignUpDTO) {
 
-
+        const {
+            fullName,
+            userName,
+            email,
+            password,
+            bitcoin,
+            usdt,
+            ipAddress,
+            userAgent,
+            referralCode
+        } = userData;
         try {
-
+            // Check for existing user
             const existingUser = await this.user.findOne({
                 $or: [
                     { email: userData.email },
                     { userName: userData.userName },
                 ]
-            })
-
-            if (existingUser) {
-                throw new Error("credentials Already in use");
-            }
-
-
-
-            // hash password 
-            const hashedPassword = await bcrypt.hash(userData.password as string, this.SALT_ROUNDS);
-
-            const NewUser = new this.user({
-                fullName: userData.fullName,
-                userName: userData.userName,
-                email: userData.email,
-                password: hashedPassword,
-                ipAddress: userData.ipAddress,
-                userAgent: userData.userAgent,
             });
 
-            await NewUser.save();
+            if (existingUser) {
+                throw new Error("Credentials already in use");
+            }
 
-            const referralCode = userData.referralCode;
-            let referrerUser = null;
+            // Hash password
+            const hashedPassword = await bcrypt.hash(password as string, this.SALT_ROUNDS);
+
+            //  Generate referral code for ALL users (moved outside the if block)
+            const uniqueCode = nanoid(16);
+            const newReferralCode = `${userData.userName}-${uniqueCode}`;
+            const referralLinks = `${process.env.FRONTEND_URL}/Auth/signup?ref=${newReferralCode}`;
+
+            // Create new user with ALL data at once
+            const NewUser = new this.user({
+                fullName: fullName,
+                userName: userName,
+                email: email,
+                password: hashedPassword,
+                wallets: {
+                    bitcoin: bitcoin || "",      //  Now using the extracted fields
+                    usdt: usdt || ""              //  Now using the extracted fields
+                },
+                ipAddress: ipAddress,
+                userAgent: userAgent,
+                referralCode: newReferralCode,
+                referralLink: referralLinks,
+            });
+
+            // Process referral if provided
+
             let referralRecord = null;
-
             if (referralCode && referralCode.trim()) {
-                referrerUser = await this.user.findOne({
+                const referrerUser = await this.user.findOne({
                     referralCode: referralCode.trim(),
                 });
 
                 if (referrerUser) {
                     NewUser.referredBy = referrerUser._id;
-                    await NewUser.save();
 
-                    //add referal model
+                    // Create referral record
                     referralRecord = new this.Referral({
                         referrer: referrerUser._id,
                         referrerUser: NewUser._id,
@@ -91,69 +131,63 @@ export class Authentication {
                     });
                     await referralRecord.save();
 
-                    await this.Notification.create(
-                        [{
-                            user: referrerUser._id,
-                            type: NotificationType.REFERRAL,
-                            title: "New Referral!",
-                            message: `${NewUser.userName} signed up using your referral code. Bonus will be awarded after their first deposit of \[ {this.MIN_DEPOSIT_FOR_BONUS / 100}.`,
-                            priority: NotificationPriority.MEDIUM,
-                            category: NotificationType.REFERRAL,
-                        }],
-                    );
+                    // Notify referrer
+                    await this.Notification.create([{
+                        user: referrerUser._id,
+                        type: NotificationType.REFERRAL,
+                        title: "New Referral!",
+                        message: `${NewUser.userName} signed up using your referral code. Bonus will be awarded after their first deposit of $${this.MIN_DEPOSIT_FOR_BONUS / 100}.`,
+                        priority: NotificationPriority.MEDIUM,
+                        category: NotificationType.REFERRAL,
+                    }]);
 
-                    await this.Notification.create(
-                        [{
-                            user: referrerUser._id,
-                            type: NotificationType.REFERRAL,
-                            title: "Referral Bonus Available!",
-                            message: `Make your first deposit of \]{this.MIN_DEPOSIT_FOR_BONUS / 100} or more to unlock your referrer's bonus!`,
-                            priority: NotificationPriority.MEDIUM,
-                            category: NotificationType.REFERRAL,
-                        }],
-                    );
+                    // Notify new user about deposit
+                    await this.Notification.create([{
+                        user: NewUser._id,
+                        type: NotificationType.DEPOSIT,
+                        title: "Make Your First Deposit",
+                        message: "Make your first deposit to start earning returns on your investment.",
+                        priority: NotificationPriority.MEDIUM,
+                        category: NotificationType.DEPOSIT,
+                    }]);
                 }
-
-                await this.wallet.create(
-                    [{
-                        userId: NewUser._id,
-                        balance: 0,
-                        invBalance: 0,
-                        pendingWithdraw: 0,
-                        totalDeposits: 0,
-                        totalReturn: 0,
-                        pending: 0,
-                    }],
-                );
-
-                const uniqueCode = nanoid(16);
-                const newReferralCode = `${NewUser.userName}-${uniqueCode}`;
-
-                const referralLinks = `${process.env.FRONTEND_URL}/signup?ref=${newReferralCode}`;
-
-                NewUser.referralCode = newReferralCode;
-                NewUser.referralLink = referralLinks;
-
-                await NewUser.save();
             }
 
-            await this.Notification.create(
-                [{
-                    user: NewUser._id,
-                    type: NotificationType.SIGNUP,
-                    title: "Welcome to Our Platform!",
-                    message: `Hello ${NewUser.fullName}, thank you for signing up!`,
-                    priority: NotificationPriority.LOW,
-                    category: NotificationType.SIGNUP,
-                }],
-            );
+            //  Save user ONCE with all data
+            await NewUser.save();
 
-            const link = `${this.config.FRONTEND_URL}/login`;
+            // Create wallet
+            await this.wallet.create([{
+                userId: NewUser._id,
+                balance: 0,
+                invBalance: 0,
+                pendingWithdraw: 0,
+                totalDeposits: 0,
+                totalReturn: 0,
+                pending: 0,
+            }]);
 
+            // Welcome notification
+            await this.Notification.create([{
+                user: NewUser._id,
+                type: NotificationType.SIGNUP,
+                title: "Welcome to Our Platform!",
+                message: `Hello ${NewUser.fullName}, thank you for signing up!`,
+                priority: NotificationPriority.LOW,
+                category: NotificationType.SIGNUP,
+            }]);
 
+            // Send emails
+            const link = `${this.config.FRONTEND_URL}/Auth/login`;
             await this.mailjet.sendWelcomeEmail(NewUser.email, NewUser.fullName, link);
-
-            await this.mailjet.sendAdminWelcomEmail(this.config.ADMIN_EMAIL_USER, NewUser.fullName, NewUser.userName, NewUser.email, NewUser.ipAddress, NewUser.userAgent);
+            await this.mailjet.sendAdminWelcomEmail(
+                this.config.ADMIN_EMAIL_USER,
+                NewUser.fullName,
+                NewUser.userName,
+                NewUser.email,
+                NewUser?.ipAddress as string,
+                NewUser?.userAgent as string
+            );
 
             return {
                 id: NewUser._id,
@@ -165,7 +199,7 @@ export class Authentication {
                 hasReferralBonus: !!referralRecord,
                 minDepositForBonus: this.MIN_DEPOSIT_FOR_BONUS,
                 createdAt: NewUser.createdAt,
-            }
+            };
 
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -180,18 +214,22 @@ export class Authentication {
                     { userName: userData.userName },
                     { email: userData.userName }
                 ]
-            })
+            }).select('+password')
+
 
             if (!isExist) {
                 throw new Error("invalid username or email");
             }
 
-            const isPasswordCorrect = await bcrypt.compare(userData.password as string, isExist.password);
+            const isPasswordCorrect = await bcrypt.compare(userData.password as string, isExist.password as string);
             if (!isPasswordCorrect) {
                 throw new Error("invalid password");
             }
 
+
+
             const accessToken = await this.TokenService.getJwtToken(isExist._id, isExist.email);
+
             const refreshToken = await this.TokenService.getRefreshJwtToken(isExist._id, isExist.email);
 
             await this.user.findOneAndUpdate(
@@ -200,12 +238,14 @@ export class Authentication {
                 { new: true }
             )
 
+
+
             const user = await this.user.findById(isExist._id);
 
             if (!user) {
                 throw new Error("Login failed");
             }
-
+            console.log("pass 7");
             const { password: _, ...safeUser } = user.toObject();
 
             return {
@@ -222,7 +262,7 @@ export class Authentication {
 
     public async forgotPassword(userData: Partial<IUser>) {
 
-        console.log(userData)
+
         try {
             //  Find user with session
             const isExist = await this.user.findOne({
@@ -357,6 +397,66 @@ export class Authentication {
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             throw new Error(`login failed: ${errorMessage}`);
+        }
+    }
+
+    public async profileUpdate(userData: ProfileUpdate) {
+        try {
+            const { userId, fullName, email, currentPassword, newPassword, bitcoin, usdt, ethereum, tron } = userData;
+
+            const isExist = await this.user.findById(userId).select('+password');
+
+            if (!isExist) {
+                throw new Error("Error while finding user");
+            }
+
+            // Verify current password
+            const isCurrentPasswordValid = await bcrypt.compare(currentPassword as string, isExist.password);
+            if (!isCurrentPasswordValid) {
+                throw new Error('Current password is incorrect');
+            }
+
+            let hashedPassword;
+
+            if (newPassword && newPassword.trim() !== '') {
+                // Check if new password is same as old
+                const isSamePassword = await bcrypt.compare(newPassword, isExist.password);
+                if (isSamePassword) {
+                    throw new Error('New password cannot be the same as old password');
+                }
+
+                hashedPassword = await bcrypt.hash(newPassword, this.SALT_ROUNDS);
+            }
+
+            const result = await this.user.findByIdAndUpdate(
+                userId,
+                {
+                    $set: {
+                        fullName: fullName,
+                        email: email,
+                        // Only include password if it was provided
+                        ...(hashedPassword && { password: hashedPassword }),
+                        wallets: {
+                            bitcoin: bitcoin,
+                            usdt: usdt,
+                            ethereum: ethereum,
+                            tron: tron
+                        },
+                    }
+                },
+                {
+                    new: true,           // Return updated document
+                    runValidators: true  // Run schema validations
+                }
+            );
+
+            return {
+                result,
+            };
+
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            throw new Error(`Signup transaction failed: ${errorMessage}`);
         }
     }
 }

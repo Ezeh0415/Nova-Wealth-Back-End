@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { AppConfig } from "../../../../config/Config";
 import { TokenService } from "../../../../Middleware/jwtConfig/GetJwtToken";
 import User, { IUser } from "../../Model/UserSchema";
-import bcrypt from 'bcryptJs';
+import bcrypt from 'bcrypt';
 
 export class AdminAuth {
     private static instance: AdminAuth;
@@ -63,7 +63,8 @@ export class AdminAuth {
 
             return {
                 safeUser,
-                token
+                token,
+                refreshToken
             }
 
         } catch (error) {
@@ -76,13 +77,13 @@ export class AdminAuth {
 
         try {
 
-            const isExist = await this.user.findOne({ email: userData.email as string });
+            const isExist = await this.user.findOne({ email: userData.email as string }).select('+password');
 
             if (!isExist) {
                 throw new Error("invalid user cridentials");
             }
 
-            const isPasswordCorrect = await bcrypt.compare(userData.password as string, isExist.password);
+            const isPasswordCorrect = await bcrypt.compare(userData.password as string, isExist?.password);
 
             if (!isPasswordCorrect) {
                 throw new Error("password dosen`t match");
@@ -100,7 +101,8 @@ export class AdminAuth {
 
             return {
                 safeUser,
-                accessToken
+                accessToken,
+                refreshToken
             }
 
 

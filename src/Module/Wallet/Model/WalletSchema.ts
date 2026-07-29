@@ -17,7 +17,7 @@ export interface IWallet extends Document {
   pending: number;
   createdAt: Date;
   updatedAt: Date;
-}
+}  //  REMEMBER TO MAKE INVBALANCE TO TOTAL INVESTED BALANCE
 
 // ==============================
 // SCHEMA DEFINITION

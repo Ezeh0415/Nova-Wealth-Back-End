@@ -6,7 +6,7 @@
   "scripts": {
     "test": "jest --runInBand",
     "start": "node dist/App.js",
-    "dev": "nodemon dist/App.js",
+    "dev": "nodemon src/App.ts",
     "build": "tsc --watch"
   },
   "repository": {
@@ -23,6 +23,7 @@
   "homepage": "https://github.com/Ezeh0415/AlthWorldBackend#readme",
   "devDependencies": {
     "@types/axios": "^0.9.36",
+    "@types/bcrypt": "^6.0.0",
     "@types/chalk": "^0.4.31",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
@@ -51,7 +52,7 @@
   "dependencies": {
     "@complycube/api": "^1.1.13",
     "axios": "^1.13.4",
-    "bcryptjs": "^3.0.3",
+    "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

@@ -105,7 +105,8 @@ const InvestmentSchema = new mongoose_1.Schema({
     },
     cancelledAt: {
         type: Date,
-    }
+    },
+    uniqueId: { type: String },
 }, {
     timestamps: true,
 });

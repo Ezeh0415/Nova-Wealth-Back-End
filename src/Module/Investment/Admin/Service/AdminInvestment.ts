@@ -76,7 +76,7 @@ export class AdminInvestmentService {
     public async confirmInvestment(investmentId: string) {
         try {
             // 1. FIND INVESTMENT
-            const investment = await this.InvestmentModel.findById(investmentId);
+            const investment = await this.InvestmentModel.findOne({ uniqueId: investmentId });
             if (!investment) {
                 throw new Error("Investment not found");
             }
@@ -120,7 +120,7 @@ export class AdminInvestmentService {
             await wallet.save();
 
             console.log(
-                `✅ Moved ${investment.amount / 100} from pending to investment balance`,
+                ` Moved ${investment.amount / 100} from pending to investment balance`,
             );
 
             // 6. SET ACTUAL DATES BASED ON PLAN DURATION
@@ -176,7 +176,7 @@ export class AdminInvestmentService {
                 investmentStartDate: investment.investmentStartDate,
                 createdAt: investment.createdAt,
                 formatType: "confirmed",
-                appName: "ALTHWORLD-GLOBAL"
+                appName: "Nova-Wealth-GLOBAL"
             }
 
             const subject = `${user.fullName} Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} is now active. It will mature on ${actualEndDate.toLocaleDateString()}.`;
@@ -440,7 +440,7 @@ export class AdminInvestmentService {
             investmentStartDate: investment.investmentStartDate,
             createdAt: investment.createdAt,
             formatType: "completed",
-            appName: "ALTHWORLD-GLOBAL"
+            appName: "Nova-Wealth-GLOBAL"
         }
 
         const subject = `${user.fullName} Your ${investment.investmentType} investment has completed. $${(totalInvBalance / 100).toFixed(2)} (Capital: $${(capital / 100).toFixed(2)} + Returns: $${(returns / 100).toFixed(2)}) has been credited to your wallet.`;
@@ -460,7 +460,7 @@ export class AdminInvestmentService {
 
     public async cancelInvestment(investmentId: string) {
         try {
-            const investment = await this.InvestmentModel.findById(investmentId);
+            const investment = await this.InvestmentModel.findOne({ uniqueId: investmentId });
             if (!investment) {
                 throw new Error("Investment not found");
             }
@@ -476,7 +476,6 @@ export class AdminInvestmentService {
                 userId: investment.userId,
             });
             if (wallet) {
-                wallet.balance += investment.amount;
                 wallet.pendingInvestment -= investment.amount;
                 await wallet.save();
             }
@@ -540,7 +539,7 @@ export class AdminInvestmentService {
                 investmentStartDate: investment.investmentStartDate,
                 createdAt: investment.createdAt,
                 formatType: "Cancelled",
-                appName: "ALTHWORLD-GLOBAL"
+                appName: "Nova-Wealth-GLOBAL"
             }
 
             const subject = `${user.fullName} Your ${plan.name} investment of $${(investment.amount / 100).toFixed(2)} was cancelled.`;
