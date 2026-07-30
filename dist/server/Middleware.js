@@ -18,42 +18,54 @@ class MiddlewareConfig {
         this.configureBodyParser();
     }
     configureBodyParser() {
-        const allowedOrigins = [
-            // Production frontend URLs
-            "https://nova-wealth-weld.vercel.app",
+        // Allow all your Vercel domains using a pattern
+        const isAllowedVercelDomain = (origin) => {
+            return /^https?:\/\/nova-wealth-.*\.vercel\.app$/.test(origin);
+        };
+        // Explicit allowed origins (for non-Vercel domains)
+        const explicitAllowedOrigins = [
             "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app",
-            // Your backend URL (if needed for self-calls)
             "https://nova-wealth-back-end.onrender.com",
-            // Development URLs
             "http://localhost:5173",
             "http://localhost:5174",
             "http://localhost:5175",
             "http://localhost:3000",
             "http://localhost:8080",
-            // Environment variable (set in Render)
             process.env.FRONTEND_URL,
-        ].filter(Boolean); // Remove undefined values
-        this.app.use(express_1.default.json());
-        this.app.use(express_1.default.urlencoded({ extended: true }));
+        ].filter(Boolean);
+        // Log configuration
+        console.log('🔒 CORS Configuration:');
+        console.log('📋 Explicit origins:', explicitAllowedOrigins);
+        console.log('🌐 Vercel pattern: nova-wealth-*.vercel.app');
         this.app.use((0, cors_1.default)({
             origin: function (origin, callback) {
                 // Allow requests with no origin (mobile apps, curl, server-to-server)
-                if (!origin)
+                if (!origin) {
+                    console.log('🔓 No origin - allowing');
                     return callback(null, true);
-                // Check if the requesting origin is in the allowed list
-                if (allowedOrigins.indexOf(origin) !== -1) {
-                    callback(null, true); // Allow the request
                 }
-                else {
-                    callback(new Error("Not allowed by CORS")); // Block the request
+                // Check if it matches your Vercel pattern
+                if (isAllowedVercelDomain(origin)) {
+                    console.log(`✅ Vercel domain allowed: ${origin}`);
+                    return callback(null, true);
                 }
+                // Check if in explicit allowed list
+                if (explicitAllowedOrigins.indexOf(origin) !== -1) {
+                    console.log(`✅ Explicitly allowed: ${origin}`);
+                    return callback(null, true);
+                }
+                // Block all other origins
+                console.log(`❌ Blocked: ${origin}`);
+                callback(new Error(`Origin ${origin} not allowed by CORS`));
             },
-            credentials: true, // Allow cookies and authentication headers
-            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], // Allowed HTTP methods
-            allowedHeaders: ["Content-Type", "Authorization", 'x-refresh-token', "x-api-key"], // Allowed headers
-            exposedHeaders: ["Content-Range", "X-Content-Range"], // Headers exposed to client
-            maxAge: 86400, // Cache preflight requests for 24 hours
+            credentials: true,
+            methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allowedHeaders: ["Content-Type", "Authorization", 'x-refresh-token', "x-api-key"],
+            exposedHeaders: ["Content-Range", "X-Content-Range"],
+            maxAge: 86400,
         }));
+        this.app.use(express_1.default.json());
+        this.app.use(express_1.default.urlencoded({ extended: true }));
         this.app.use("/api", (0, express_rate_limit_1.default)({
             windowMs: 15 * 60 * 1000, // Time window: 15 minutes
             max: 200, // Maximum 200 requests per window per IP
