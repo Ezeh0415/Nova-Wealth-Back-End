@@ -20,7 +20,7 @@ class MiddlewareConfig {
     configureBodyParser() {
         const allowedOrigins = [
             "https://nova-wealth-back-end.onrender.com",
-            "hhttps://nova-wealth-weld.vercel.app",
+            "https://nova-wealth-weld.vercel.app",
             "http://localhost:5173", // Local development (Vite default)
             "http://localhost:5174", // Local development (Vite default)
             "http://localhost:5175", // Alternate local port
