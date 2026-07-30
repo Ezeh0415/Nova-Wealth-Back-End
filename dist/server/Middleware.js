@@ -19,17 +19,20 @@ class MiddlewareConfig {
     }
     configureBodyParser() {
         const allowedOrigins = [
-            "https://nova-wealth-back-end.onrender.com",
+            // Production frontend URLs
             "https://nova-wealth-weld.vercel.app",
-            "http://localhost:5173", // Local development (Vite default)
-            "http://localhost:5174", // Local development (Vite default)
-            "http://localhost:5175", // Alternate local port
-            "http://localhost:3000", // Local server port
-            "http://localhost:8080", // Local server port
-            "https://api.coingecko.com/api/v3/coins/markets?" +
-                "vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=false", // coin gkeco
-            "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app", // Vercel deployment
-        ];
+            "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app",
+            // Your backend URL (if needed for self-calls)
+            "https://nova-wealth-back-end.onrender.com",
+            // Development URLs
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:5175",
+            "http://localhost:3000",
+            "http://localhost:8080",
+            // Environment variable (set in Render)
+            process.env.FRONTEND_URL,
+        ].filter(Boolean); // Remove undefined values
         this.app.use(express_1.default.json());
         this.app.use(express_1.default.urlencoded({ extended: true }));
         this.app.use((0, cors_1.default)({
