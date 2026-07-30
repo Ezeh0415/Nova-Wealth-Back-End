@@ -22,7 +22,7 @@ export class MiddlewareConfig {
 
         const allowedOrigins: string[] = [
             "https://nova-wealth-back-end.onrender.com",
-            "https://nova-wealth-nb7d.onrender.com",
+            "hhttps://nova-wealth-weld.vercel.app",
             "http://localhost:5173", // Local development (Vite default)
             "http://localhost:5174", // Local development (Vite default)
             "http://localhost:5175", // Alternate local port
