@@ -36,7 +36,7 @@ class Authentication {
         return Authentication.instance;
     }
     async SignUp(userData) {
-        const { fullName, userName, email, password, bitcoin, usdt, ipAddress, userAgent, referralCode } = userData;
+        const { fullName, userName, email, password, ipAddress, userAgent, referralCode } = userData;
         try {
             // Check for existing user
             const existingUser = await this.user.findOne({
@@ -60,10 +60,6 @@ class Authentication {
                 userName: userName,
                 email: email,
                 password: hashedPassword,
-                wallets: {
-                    bitcoin: bitcoin || "", //  Now using the extracted fields
-                    usdt: usdt || "" //  Now using the extracted fields
-                },
                 ipAddress: ipAddress,
                 userAgent: userAgent,
                 referralCode: newReferralCode,

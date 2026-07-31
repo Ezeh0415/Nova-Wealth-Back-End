@@ -29,8 +29,6 @@ class AuthContr {
                 userName: validateData.userName,
                 email: validateData.email,
                 password: validateData.password,
-                bitcoin: validateData.bitcoin,
-                usdt: validateData.usdt,
                 ipAddress: ipAddress,
                 userAgent: userAgent,
             };

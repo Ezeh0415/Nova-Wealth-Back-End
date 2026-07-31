@@ -14,8 +14,6 @@ interface SignUpDTO {
     userName: string;
     email: string;
     password: string;
-    bitcoin?: string;
-    usdt?: string;
     ipAddress?: string;
     userAgent?: string;
     referralCode?: string;
@@ -66,8 +64,6 @@ export class Authentication {
             userName,
             email,
             password,
-            bitcoin,
-            usdt,
             ipAddress,
             userAgent,
             referralCode
@@ -99,10 +95,6 @@ export class Authentication {
                 userName: userName,
                 email: email,
                 password: hashedPassword,
-                wallets: {
-                    bitcoin: bitcoin || "",      //  Now using the extracted fields
-                    usdt: usdt || ""              //  Now using the extracted fields
-                },
                 ipAddress: ipAddress,
                 userAgent: userAgent,
                 referralCode: newReferralCode,

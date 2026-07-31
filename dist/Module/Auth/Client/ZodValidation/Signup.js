@@ -11,6 +11,4 @@ exports.SignUp = zod_1.z.object({
         .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
         .regex(/[0-9]/, "Password must contain at least one number"),
     referral: zod_1.z.string().optional().or(zod_1.z.literal('')),
-    bitcoin: zod_1.z.string(),
-    usdt: zod_1.z.string(),
 });
