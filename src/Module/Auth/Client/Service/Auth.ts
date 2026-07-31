@@ -392,6 +392,8 @@ export class Authentication {
         }
     }
 
+    // this profile is k
+
     public async profileUpdate(userData: ProfileUpdate) {
         try {
             const { userId, fullName, email, currentPassword, newPassword, bitcoin, usdt, ethereum, tron } = userData;
