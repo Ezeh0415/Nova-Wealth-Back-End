@@ -37,9 +37,8 @@ class InvestPlanContr {
     }
     async updateInvestPlan(req, res) {
         try {
-            const { id } = req.params;
             const userData = CreateInvestPlan_1.CreateInvestPlan.parse(req.body);
-            const updateInvestPlan = await this.investPlanService.updateInvestmentPlan(id, userData);
+            const updateInvestPlan = await this.investPlanService.updateInvestmentPlan(userData);
             res.status(200).json(updateInvestPlan);
             return;
         }
@@ -58,7 +57,7 @@ class InvestPlanContr {
     }
     async DeleteInvestPlan(req, res) {
         try {
-            const { id } = req.params;
+            const id = req.body.id;
             const deleteInvestPlan = await this.investPlanService.DeleteInvestmentPlan(id);
             res.status(200).json(deleteInvestPlan);
             return;

@@ -33,18 +33,18 @@ export class investPlanService {
         }
     }
 
-    public async updateInvestmentPlan(investId: string, userData: Partial<IInvestmentPlan>) {
+    public async updateInvestmentPlan(userData: Partial<IInvestmentPlan>) {
         try {
             const { planId, name, minAmount, maxAmount, color, iconName, roi, duration, description, isActive, features } = userData;
 
-            const investmentPlan = await this.investPlan.findById(investId);
+            const investmentPlan = await this.investPlan.findOne({ planId: planId });
 
             if (!investmentPlan) {
                 throw new Error("investment Plan Not Found");
             }
 
-            await this.investPlan.findByIdAndUpdate(
-                investId,
+            await this.investPlan.findOneAndUpdate(
+                { planId: planId },
                 {
                     $set: {
                         planId: planId,

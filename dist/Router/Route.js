@@ -57,8 +57,8 @@ router.post("/withdraw", apiKey.RequireApiKey.bind(apiKey), Authenticate.authent
 // invest plan
 router.get("/investPlan", apiKey.RequireApiKey.bind(apiKey), (req, res) => getDashboardContr.getInvestPlan(req, res));
 router.post("/createPlan", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.CreateInvestPlan(req, res));
-router.put("/updatePlan/:id", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.updateInvestPlan(req, res));
-router.delete("/deletePlan/:id", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.DeleteInvestPlan(req, res));
+router.put("/updatePlan", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.updateInvestPlan(req, res));
+router.delete("/deletePlan", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => investPlanContr.DeleteInvestPlan(req, res));
 // INVESTMENT SECTION
 router.post("/invest", apiKey.RequireApiKey.bind(apiKey), Authenticate.authenticate.bind(Authenticate), (req, res) => clientInvestmentContr.invest(req, res));
 // 

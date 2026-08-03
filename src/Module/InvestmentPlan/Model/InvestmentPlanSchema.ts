@@ -7,6 +7,7 @@ export enum PlanIconName {
     BAR_CHART_OUTLINED = "BarChartOutlined",
     TROPHY_OUTLINED = "TrophyOutlined",
     ROCKET_OUTLINED = "RocketOutlined",
+    GOLD_OUTLINED = "GoldOutlined"
 }
 
 // ==================== INTERFACE ====================

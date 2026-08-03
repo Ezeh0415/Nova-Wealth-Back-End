@@ -43,6 +43,7 @@ var PlanIconName;
     PlanIconName["BAR_CHART_OUTLINED"] = "BarChartOutlined";
     PlanIconName["TROPHY_OUTLINED"] = "TrophyOutlined";
     PlanIconName["ROCKET_OUTLINED"] = "RocketOutlined";
+    PlanIconName["GOLD_OUTLINED"] = "GoldOutlined";
 })(PlanIconName || (exports.PlanIconName = PlanIconName = {}));
 // ==================== SCHEMA ====================
 const InvestmentPlanSchema = new mongoose_1.Schema({

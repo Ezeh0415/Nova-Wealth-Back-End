@@ -49,9 +49,8 @@ export class InvestPlanContr {
 
     public async updateInvestPlan(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const { id } = req.params;
             const userData = CreateInvestPlan.parse(req.body);
-            const updateInvestPlan = await this.investPlanService.updateInvestmentPlan(id as string, userData);
+            const updateInvestPlan = await this.investPlanService.updateInvestmentPlan(userData);
             res.status(200).json(updateInvestPlan);
             return;
         } catch (error) {
@@ -72,7 +71,7 @@ export class InvestPlanContr {
 
     public async DeleteInvestPlan(req: AuthRequest, res: Response): Promise<void> {
         try {
-            const { id } = req.params;
+            const id = req.body.id;
             const deleteInvestPlan = await this.investPlanService.DeleteInvestmentPlan(id as string);
             res.status(200).json(deleteInvestPlan);
             return;

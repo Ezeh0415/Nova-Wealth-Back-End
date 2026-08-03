@@ -33,14 +33,14 @@ class investPlanService {
             throw new Error('Failed to delete investment plan: Unknown error');
         }
     }
-    async updateInvestmentPlan(investId, userData) {
+    async updateInvestmentPlan(userData) {
         try {
             const { planId, name, minAmount, maxAmount, color, iconName, roi, duration, description, isActive, features } = userData;
-            const investmentPlan = await this.investPlan.findById(investId);
+            const investmentPlan = await this.investPlan.findOne({ planId: planId });
             if (!investmentPlan) {
                 throw new Error("investment Plan Not Found");
             }
-            await this.investPlan.findByIdAndUpdate(investId, {
+            await this.investPlan.findOneAndUpdate({ planId: planId }, {
                 $set: {
                     planId: planId,
                     name: name,
