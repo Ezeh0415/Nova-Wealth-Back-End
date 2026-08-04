@@ -43,6 +43,7 @@ var InvestmentType;
     InvestmentType["STANDARD"] = "standard";
     InvestmentType["PREMIUM"] = "premium";
     InvestmentType["ULTIMATE"] = "ultimate";
+    InvestmentType["PLATINUM"] = "platinum";
 })(InvestmentType || (exports.InvestmentType = InvestmentType = {}));
 var InvestmentStatus;
 (function (InvestmentStatus) {

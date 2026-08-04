@@ -137,8 +137,7 @@ export class ClientTransaction {
                 uniqueId: uniqueId,
             }
 
-            await this.ClientInvestment.invest(investData);
-
+             const result = await this.ClientInvestment.invest(investData);
 
 
             return {

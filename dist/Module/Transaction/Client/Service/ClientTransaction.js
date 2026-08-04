@@ -139,7 +139,7 @@ class ClientTransaction {
                 investmentType: plan_id,
                 uniqueId: uniqueId,
             };
-            await this.ClientInvestment.invest(investData);
+            const result = await this.ClientInvestment.invest(investData);
             return {
                 success: true,
                 message: "Deposit request submitted successfully",

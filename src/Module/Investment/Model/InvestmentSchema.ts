@@ -7,6 +7,7 @@ export enum InvestmentType {
     STANDARD = "standard",
     PREMIUM = "premium",
     ULTIMATE = "ultimate",
+    PLATINUM = "platinum",
 }
 
 export enum InvestmentStatus {
