@@ -18,6 +18,7 @@ class MiddlewareConfig {
         this.configureBodyParser();
     }
     configureBodyParser() {
+        this.app.set('trust proxy', 1);
         // Allow all your Vercel domains using a pattern
         const isAllowedVercelDomain = (origin) => {
             return /^https?:\/\/nova-wealth-.*\.vercel\.app$/.test(origin);
@@ -34,10 +35,6 @@ class MiddlewareConfig {
             "http://localhost:8080",
             process.env.FRONTEND_URL,
         ].filter(Boolean);
-        // Log configuration
-        console.log('🔒 CORS Configuration:');
-        console.log('📋 Explicit origins:', explicitAllowedOrigins);
-        console.log('🌐 Vercel pattern: nova-wealth-*.vercel.app');
         this.app.use((0, cors_1.default)({
             origin: function (origin, callback) {
                 // Allow requests with no origin (mobile apps, curl, server-to-server)

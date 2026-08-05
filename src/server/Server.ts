@@ -21,6 +21,7 @@ export class AppServer {
 
     public async initialize(): Promise<void> {
         try {
+            
             this.middlewareConfig.initialize();
             this.configureErrorHandlers();
             const dbConnected = await this.database.connect(5);
