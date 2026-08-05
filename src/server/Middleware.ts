@@ -29,6 +29,7 @@ const isAllowedVercelDomain = (origin: string): boolean => {
 const explicitAllowedOrigins: string[] = [
     "https://alth-world-front-end-fm6m-bzcajeud9-ezeh0415s-projects.vercel.app",
     "https://nova-wealth-back-end.onrender.com",
+    "https://nova-wealth-dbo2.onrender.com",
     "http://localhost:5173",
     "http://localhost:5174",
     "http://localhost:5175",
